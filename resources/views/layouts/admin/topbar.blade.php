@@ -52,7 +52,7 @@
                 aria-haspopup="true" aria-expanded="false">
                 <i class="fas fa-bell fa-fw"></i>
                 <!-- Counter - Alerts -->
-                <span
+                {{-- <span --}}
                     {{-- class="badge badge-danger badge-counter">{{ $newSubscribers->count() > 9 ? '9+' : $newSubscribers->count() }}</span> --}}
             </a>
             <!-- Dropdown - Alerts -->

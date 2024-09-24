@@ -8,8 +8,8 @@ use Inertia\Response;
 
 class HolidaysController extends Controller
 {
-    public function index(): Response
-    {
-        return Inertia::render('Holidays/Index', []);
-    }
+    // public function index(): Response
+    // {
+    //     return Inertia::render('Holidays/Index', []);
+    // }
 }

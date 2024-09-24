@@ -16,16 +16,18 @@ class User extends Authenticatable
      *
      * @var array<int, string>
      */
+    protected $table = 'tbl_ss_users';
+
     protected $fillable = [
-        'name', 
-        'phone_number', 
-        'email', 
-        'username', 
-        'bio', 
-        'profile_photo', 
-        'is_active', 
-        'password', 
-        'role', 
+        'name',
+        'phone_number',
+        'email',
+        'username',
+        'bio',
+        'profile_photo',
+        'is_active',
+        'password',
+        'role',
         'is_deleted',
     ];
 
@@ -55,10 +57,10 @@ class User extends Authenticatable
     /**
      * Get the user that created this user.
      */
-    public function creator() // optional 
+    public function creator() // optional
     {
         return $this->belongsTo(User::class, 'created_by');
-    } 
+    }
 
     // public function userDetails()
     // {

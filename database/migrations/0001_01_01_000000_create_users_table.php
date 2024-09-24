@@ -11,7 +11,7 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('users', function (Blueprint $table) {
+        Schema::create('tbl_ss_users', function (Blueprint $table) {
             $table->id();
             $table->string('name');
             $table->string('phone_number');
@@ -44,7 +44,7 @@ return new class extends Migration
             $table->integer('last_activity')->index();
         });
 
-        Schema::table('users', function (Blueprint $table) {
+        Schema::table('tbl_ss_users', function (Blueprint $table) {
             $table->unsignedBigInteger('created_by')->nullable()->after('email');
             $table->foreign('created_by')->references('id')->on('users')->onDelete('set null');
         });
@@ -55,10 +55,10 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('users');
+        Schema::dropIfExists('tbl_ss_users');
         Schema::dropIfExists('password_reset_tokens');
         Schema::dropIfExists('sessions');
-        Schema::table('users', function (Blueprint $table) {
+        Schema::table('tbl_ss_users', function (Blueprint $table) {
             $table->dropForeign(['created_by']);
             $table->dropColumn('created_by');
         });

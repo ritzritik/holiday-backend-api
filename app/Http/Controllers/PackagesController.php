@@ -60,28 +60,112 @@ class PackagesController extends Controller
     // Search Packages with dynamic query params
     public function packageSearch(Request $request)
     {
-        $depdate = Carbon::createFromFormat('Y-m-d', $request->input('departureDate'))->format('d/m/Y');
+        $apiUrl = 'http://87.102.127.86:8119/search/searchoffers.dll';
+        $depdate = \Carbon\Carbon::createFromFormat('Y-m-d', $request->input('departureDate'))->format('d/m/Y');
+        $duration = preg_replace('/\D/', '', $request->input('duration')); 
+        $adults = preg_replace('/\D/', '', $request->input('adults'));
+        $airportCode = $request->input('aiportCode');
+        $flex = $request->input('flex');
         $queryParams = $this->buildQueryParams($request, [
-            'agtid' => '144',
+            'agtid' => '100',
             'page' => 'HOLSEARCH',
             'platform' => 'WEB',
-            'depart' => $request->input('airportCode'),
+            'depart' => $airportCode,
             'countryid' => $request->input('destination'),
             'depdate' => $depdate,
-            'flex' => $request->input('flex'),
-            'adults' => preg_replace('/\D/', '', $request->input('adults')),
+            'flex' => $flex,
+            'board' => '',
+            'star' => '',
+            'adults' => $adults,
             'children' => '0',
-            'duration' => preg_replace('/\D/', '', $request->input('duration')),
+            'duration' => $duration,
             'minprice' => $request->input('minprice', ''),
             'maxprice' => $request->input('maxprice', ''),
             'type' => $request->input('type', 'DPCP'),
             'output' => 'JSON',
         ]);
-
-        $packages = $this->getPackagesFromApi($queryParams);
-        $sortedPackages = $this->sortAndFilterPackages($packages, $request);
-
-        return response()->json(['message' => 'success', 'data' => ['packages' => $sortedPackages], 'statusCode' => 200]);
+    
+        $queryString = http_build_query($queryParams);
+        $rawData = file_get_contents("{$apiUrl}?{$queryString}");
+        $trimmedData = trim($rawData);
+        $response = mb_convert_encoding($trimmedData, 'UTF-8', 'UTF-8');
+        $packages = json_decode($response, true)['Offers'] ?? [];
+        if (json_last_error() !== JSON_ERROR_NONE) {
+            throw new \Exception('JSON Decode Error: ' . json_last_error_msg());
+        }
+        $packagesArray = is_array($packages) ? $packages : [];
+        $packagesArray = array_slice($packages, 0, 60); 
+    
+        $sortOption = $request->input('sort', ''); // Default to an empty string if not set
+        // Apply sorting if requested
+        if ($sortOption) {
+            usort($packagesArray, function ($a, $b) use ($sortOption) {
+                $sellPriceA = $a['Sellprice'] ?? 0;
+                $sellPriceB = $b['Sellprice'] ?? 0;
+                $durationA = $a['Duration'] ?? 0;
+                $durationB = $b['Duration'] ?? 0;
+    
+                switch ($sortOption) {
+                    case 'price_asc':
+                        return $sellPriceA <=> $sellPriceB;
+                    case 'price_desc':
+                        return $sellPriceB <=> $sellPriceA;
+                    case 'duration_asc':
+                        return $durationA <=> $durationB;
+                    case 'duration_desc':
+                        return $durationB <=> $durationA;
+                    default:
+                        return 0;
+                }
+            });
+        }
+    
+        // Apply budget filter if requested
+        $priceRanges = [
+            'under_100' => [0, 100],
+            '100_500' => [100, 500],
+            '500_1000' => [500, 1000],
+            '1000_2000' => [1000, 2000],
+            'over_2000' => [2000, PHP_INT_MAX],
+        ];
+    
+        $budgetFilter = $request->input('budget');
+        if (isset($priceRanges[$budgetFilter])) {
+            [$minPrice, $maxPrice] = $priceRanges[$budgetFilter];
+            $packagesArray = array_filter($packagesArray, function ($package) use ($minPrice, $maxPrice) {
+                return isset($package['Sellprice']) && ((float) $package['Sellprice']) >= $minPrice && ((float) $package['Sellprice']) <= $maxPrice;
+            });
+        }
+    
+        // Apply activity filtering if requested
+        if ($request->input('activities')) {
+            $selectedActivities = $request->input('activities', []);
+            $packagesArray = array_filter($packagesArray, function ($package) use ($selectedActivities) {
+                foreach ($selectedActivities as $activity) {
+                    if (strpos($package['Activities'], $activity) === false) {
+                        return false;
+                    }
+                }
+                return true;
+            });
+        }
+    
+        // Apply departure date filtering if requested
+        if ($request->input('departure_date')) {
+            $departureDate = $request->input('departure_date');
+            $packagesArray = array_filter($packagesArray, function ($package) use ($departureDate) {
+                return $package['OutboundDep'] === $departureDate;
+            });
+        }
+        
+        return response()->json([
+            'message' => 'success',
+            'data' => [
+                'packages' => $packagesArray,
+                'queryParams' => $request->query() ?: null,
+            ],
+            'statusCode' => 200
+        ]);
     }
 
     // Helper: Build Query Parameters

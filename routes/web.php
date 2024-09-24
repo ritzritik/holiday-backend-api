@@ -11,5 +11,4 @@ Route::get('/', function () {
 require __DIR__.'/admin.php';
 require __DIR__.'/booking_pending.php';
 require __DIR__.'/transfer.php';
-require __DIR__.'/api.php';
 require __DIR__.'/post.php';

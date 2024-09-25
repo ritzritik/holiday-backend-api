@@ -37,7 +37,7 @@ Route::get('/package/theme', [PackagesController::class, 'packages_by_theme']);
 Route::post('/package/booking/details', [PackagesController::class, 'package_booking_details']);
 
 // Route for handling checkout
-Route::post('/package/checkout', [PackagesController::class, 'package_checkout']);
+Route::get('/package/checkout', [PackagesController::class, 'package_checkout']);
 
 // Route::get('/flights', [FlightsController::class, 'index'])->name('flight.index');
 

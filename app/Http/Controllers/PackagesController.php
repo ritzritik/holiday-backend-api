@@ -518,7 +518,7 @@ class PackagesController extends Controller
     public function package_checkout(Request $request)
     {
         if (!Session::has('expiry_time')) {
-            $sessionLifetime = (int) config('session.lifetime', 30); // Ensure it's an integer
+            $sessionLifetime = (int) config('session.lifetime', 30);
             $expiryTime = now()->addMinutes($sessionLifetime);
             Session::put('expiry_time', $expiryTime);
         } else {
@@ -526,17 +526,16 @@ class PackagesController extends Controller
         }
     
         $formattedExpiryTime = $expiryTime->toIso8601String();
-    
         // Auto-generating a unique booking ID
         $bookingId = strtoupper(Str::random(8));
-    
-        $checkout_package = $request->input('updatedPkg');
-    
         // Return data as JSON
         return response()->json([
-            'checkout_package' => $checkout_package,
-            'booking_id' => $bookingId,
-            'session_expiry' => $formattedExpiryTime,
+            'message' => 'success',
+            'data' => [
+                'booking_id' => $bookingId,
+                'session_expiry' => $formattedExpiryTime,
+            ],
+            'statusCode' => 200
         ]);
     }
     

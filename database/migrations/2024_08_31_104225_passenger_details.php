@@ -18,11 +18,11 @@ return new class extends Migration
             $table->string('first_name');
             $table->string('surname');
             $table->string('email');
-            $table->boolean('payment_status')->default(false);
+            $table->string('payment_status')->nullable();
             $table->string('contact_number');
             $table->string('package_type')->nullable();
             $table->decimal('price', 8, 2);
-            $table->foreignId('user_id')->constrained()->onDelete('cascade');
+            $table->foreignId('user_id')->nullable()->constrained()->onDelete('set null');
             $table->timestamps();
         });
     }

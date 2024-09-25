@@ -12,13 +12,21 @@ class PassengerDetails extends Model
     protected $table = 'passenger_details';
 
     protected $fillable = [
-        'booking_id', 'title', 'first_name', 'surname', 'email', 'payment_status', 'contact_number', 'package_type', 'price', 'user_id'
+        'booking_id', 
+        'title', 
+        'first_name', 
+        'surname', 
+        'email', 
+        'payment_status',
+        'contact_number', 
+        'package_type', 
+        'price', 
+        'user_id'
     ];
 
+    // Define the relationship to the User model
     public function user()
     {
         return $this->belongsTo(User::class);
     }
 }
-
-

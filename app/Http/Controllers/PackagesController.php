@@ -555,29 +555,29 @@ class PackagesController extends Controller
         ];
     }
 
-    //Checking for Login User
-    public function checkLogin()
-    {
-        return response()->json(['isLoggedIn' => Auth::check()]);
-    }
+    // //Checking for Login User
+    // public function checkLogin()
+    // {
+    //     return response()->json(['isLoggedIn' => Auth::check()]);
+    // }
 
-    public function login(Request $request)
-    {
-        // Validate credentials
-        $credentials = $request->only('email', 'password');
+    // public function login(Request $request)
+    // {
+    //     // Validate credentials
+    //     $credentials = $request->only('email', 'password');
 
-        $request->validate([
-            'email' => 'required|email',
-            'password' => 'required|string|min:6',
-        ]);
+    //     $request->validate([
+    //         'email' => 'required|email',
+    //         'password' => 'required|string|min:6',
+    //     ]);
 
-        if (Auth::attempt($credentials)) {
-            // Authentication passed, return success response
-            return response()->json(['status' => 'success', 'user' => Auth::user()]);
-        }
+    //     if (Auth::attempt($credentials)) {
+    //         // Authentication passed, return success response
+    //         return response()->json(['status' => 'success', 'user' => Auth::user()]);
+    //     }
 
-        return response()->json(['status' => 'error', 'message' => 'Invalid credentials'], 401);
-    }
+    //     return response()->json(['status' => 'error', 'message' => 'Invalid credentials'], 401);
+    // }
 
     public function storePassengerDetails(Request $request)
     {
@@ -586,40 +586,37 @@ class PackagesController extends Controller
             $validator = Validator::make($request->all(), [
                 'passengers' => 'required|array',
                 'passengers.*.booking_id' => 'nullable|string|max:100',
-                'passengers.*.title' => 'nullable|in:Mr,Ms,Mrs,Ms,Miss,Dr',
+                'passengers.*.title' => 'nullable|in:Mr,Ms,Mrs,Miss,Dr',
                 'passengers.*.first_name' => 'required|string|max:255',
                 'passengers.*.surname' => 'required|string|max:255',
                 'passengers.*.email' => 'required|string|email|max:255',
                 'passengers.*.contact_number' => 'required|string|max:15',
                 'passengers.*.package_type' => 'nullable|string',
-                'passengers.*.package_id' => 'nullable|string',
                 'passengers.*.price' => 'required|numeric',
             ]);
-
+    
             // Check if the validation fails
             if ($validator->fails()) {
                 return response()->json(['errors' => $validator->errors()], 422);
             }
-
-            $userId = Auth::id();
+    
+            // $userId = Auth::id(); 
             $passengerDetails = [];
-
+    
             foreach ($request->input('passengers') as $passengerData) {
-                $passengerData['user_id'] = $userId;
+                // $passengerData['user_id'] = $userId; // Optional if user_id is not needed
                 $passengerDetails[] = PassengerDetails::create($passengerData);
             }
-
+    
             return response()->json([
                 'message' => 'Passenger details saved successfully.',
                 'passengerDetails' => $passengerDetails,
             ], 201);
         } catch (\Exception $e) {
-            print_r($e->getMessage());
-            print_r($e->getLine());
-            Log::error('Error saving passenger details', ['error' => $e->getMessage()]);
-            return response()->json(['error' => 'Internal Server Error'], 500);
+            return response()->json(['error' => $e], 500);
         }
     }
+    
 
 
     public function verifyPromoCode(Request $request)

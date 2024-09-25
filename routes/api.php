@@ -47,6 +47,8 @@ Route::post('/package/booking/details', [PackagesController::class, 'package_boo
 // Route for handling checkout
 Route::get('/package/checkout', [PackagesController::class, 'package_checkout']);
 
+Route::post('/package/save-passenger', [PackagesController::class, 'storePassengerDetails']);
+
 // Route::get('/flights', [FlightsController::class, 'index'])->name('flight.index');
 
 Route::post('/flights/search', [FlightsController::class, 'flightSearch'])->name('flight.search');

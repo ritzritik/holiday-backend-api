@@ -39,7 +39,6 @@ Route::get('/packages', [PackagesController::class, 'index']);
 // Route for searching packages with dynamic query parameters
 Route::get('/packages/search', [PackagesController::class, 'packageSearch']);
 
-
 Route::get('/package/theme', [PackagesController::class, 'packages_by_theme']);
 
 Route::post('/package/booking/details', [PackagesController::class, 'package_booking_details']);
@@ -48,6 +47,13 @@ Route::post('/package/booking/details', [PackagesController::class, 'package_boo
 Route::get('/package/checkout', [PackagesController::class, 'package_checkout']);
 
 Route::post('/package/save-passenger', [PackagesController::class, 'storePassengerDetails']);
+
+Route::post('/package/save-booking-details', [PackagesController::class, 'saveBookingDetails']);
+
+Route::post('/package/verify-promo-code', [PackagesController::class, 'verifyPromoCode']);
+
+Route::post('/package/details-verify', [PackagesController::class, 'saveCardDetails']);
+
 
 // Route::get('/flights', [FlightsController::class, 'index'])->name('flight.index');
 

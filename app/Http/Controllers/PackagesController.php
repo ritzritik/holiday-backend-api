@@ -17,6 +17,8 @@ use App\Models\Coupon;
 use App\Models\Pricing;
 use Illuminate\Support\Facades\Http;
 use Psy\Output\Theme;
+use App\Models\BookingDetails;
+use App\Models\CardDetails;
 
 class PackagesController extends Controller
 {
@@ -582,7 +584,7 @@ class PackagesController extends Controller
     public function storePassengerDetails(Request $request)
     {
         try {
-            // Define validation rules
+            // Validate the incoming request
             $validator = Validator::make($request->all(), [
                 'passengers' => 'required|array',
                 'passengers.*.booking_id' => 'nullable|string|max:100',
@@ -593,29 +595,42 @@ class PackagesController extends Controller
                 'passengers.*.contact_number' => 'required|string|max:15',
                 'passengers.*.package_type' => 'nullable|string',
                 'passengers.*.price' => 'required|numeric',
+                'booking_details' => 'required|array',
             ]);
     
-            // Check if the validation fails
             if ($validator->fails()) {
                 return response()->json(['errors' => $validator->errors()], 422);
             }
     
-            // $userId = Auth::id(); 
             $passengerDetails = [];
     
+            // Prepare booking details
+            $bookingDetailsData = $request->input('booking_details');
+            // $bookingDetailsData['booking_id'] = $bookingId; // Add the booking ID to the booking details
+    
+            // Save booking details, storing package_details as JSON
+            $bookingDetails = BookingDetails::create([
+                'booking_id' => $bookingDetailsData['booking_id'],
+                'refnum' => $bookingDetailsData['refnum'],
+                'package_details' => json_encode($bookingDetailsData), // Store as JSON
+            ]);
+    
+            // Loop over passengers and save them
             foreach ($request->input('passengers') as $passengerData) {
-                // $passengerData['user_id'] = $userId; // Optional if user_id is not needed
+                $passengerData['booking_id'] = $bookingDetails->booking_id; // Assign booking ID to passengers
                 $passengerDetails[] = PassengerDetails::create($passengerData);
             }
     
             return response()->json([
-                'message' => 'Passenger details saved successfully.',
+                'message' => 'Passenger and booking details saved successfully.',
+                'bookingDetails' => $bookingDetails,
                 'passengerDetails' => $passengerDetails,
             ], 201);
         } catch (\Exception $e) {
-            return response()->json(['error' => $e], 500);
+            return response()->json(['error' => $e->getMessage()], 500);
         }
     }
+    
     
 
 
@@ -634,6 +649,94 @@ class PackagesController extends Controller
             return response()->json(['success' => false, 'message' => 'Invalid promo code']);
         }
     }
+
+    public function saveBookingDetails(Request $request)
+    {
+        try {
+            // Validate the incoming booking request
+            $validator = Validator::make($request->all(), [
+                'booking_id' => 'nullable|string|max:100',
+                'refnum' => 'required|string|max:100',
+                'type' => 'required|string|max:10',
+                'hotelsupplier' => 'required|string|max:255',
+                'flightsuppler' => 'required|string|max:255',
+                'depaptcode' => 'required|string|max:10',
+                'arraptcode' => 'required|string|max:10',
+                'depaptname' => 'required|string|max:255',
+                'arraptname' => 'required|string|max:255',
+                'duration' => 'required|numeric',
+                'flightnetprice' => 'required|numeric',
+                'hotelnetprice' => 'required|numeric',
+                'baggageprice' => 'nullable|numeric',
+                'boardbasis' => 'nullable|string|max:255',
+                'hotelname' => 'required|string|max:255',
+                'image' => 'nullable|string|max:255',
+                'starrating' => 'nullable|numeric',
+                'latitude' => 'nullable|numeric',
+                'longitude' => 'nullable|numeric',
+                'outbounddep' => 'required|date_format:Y-m-d H:i',
+                'outboundarr' => 'required|date_format:Y-m-d H:i',
+                'outboundfltnum' => 'required|string|max:20',
+                'inbounddep' => 'required|date_format:Y-m-d H:i',
+                'inboundarr' => 'required|date_format:Y-m-d H:i',
+                'inboundfltnum' => 'required|string|max:20',
+                'sellprice' => 'required|numeric',
+                'resortname' => 'required|string|max:255',
+                'roomtype' => 'required|string|max:255',
+                'giatacode' => 'nullable|string|max:50',
+                'ourhtlid' => 'nullable|string|max:50',
+                'supphtlid' => 'nullable|string|max:50',
+                'brochurecode' => 'nullable|string|max:50',
+                'tticode' => 'nullable|string|max:50',
+                'content' => 'nullable|string',
+            ]);
+    
+            if ($validator->fails()) {
+                return response()->json(['errors' => $validator->errors()], 422);
+            }
+    
+            // Create booking details
+            $bookingDetails = BookingDetails::create($request->all());
+    
+            return response()->json([
+                'message' => 'Booking details saved successfully.',
+                'bookingDetails' => $bookingDetails,
+            ], 201);
+        } catch (\Exception $e) {
+            return response()->json(['error' => $e->getMessage()], 500);
+        }
+    }
+    
+    
+
+    public function saveCardDetails(Request $request)
+    {
+        try {
+            // Validate the card details
+            $validator = Validator::make($request->all(), [
+                'booking_id' => 'required|string|max:255',
+                'card_number' => 'required|string|max:255',
+                'card_holder_name' => 'required|string|max:255',
+                'expiry_date' => 'required|string|max:50',
+                'cvv' => 'required|string|max:4',
+                'billing_address' => 'nullable|string|max:255',
+            ]);
+    
+            if ($validator->fails()) {
+                return response()->json(['errors' => $validator->errors()], 422);
+            }
+    
+            $cardDetails = CardDetails::create($request->all());
+    
+            return response()->json([
+                'success' => true,
+                'message' => 'Card details saved successfully.'
+            ], 201);
+        } catch (\Exception $e) {
+            return response()->json(['error' => $e->getMessage()], 500);
+        }
+    }
+    
 
     // public function getPassengerDetails()
     // {

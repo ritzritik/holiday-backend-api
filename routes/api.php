@@ -7,10 +7,18 @@ use App\Http\Controllers\HotelsController;
 use App\Http\Controllers\PackagesController;
 use App\Http\Controllers\SkiHolidaysController;
 use App\Http\Controllers\FlightsController;
+use App\Http\Controllers\AuthController;
 
-Route::get('/user', function (Request $request) {
-    return $request->user();
-})->middleware('auth:sanctum');
+// Auth routes
+Route::post('/register', [AuthController::class, 'register']);
+Route::post('/login', [AuthController::class, 'login']);
+
+// Protect routes using JWT middleware
+Route::middleware('auth:api')->group(function () {
+    Route::post('/logout', [AuthController::class, 'logout']);
+    Route::get('/me', [AuthController::class, 'me']);
+});
+
 
 Route::post('/test', function (Request $request) {
     return response()->json([

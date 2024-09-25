@@ -2,22 +2,22 @@
 
 namespace App\Models;
 
-// use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use Tymon\JWTAuth\Contracts\JWTSubject;
 
-class User extends Authenticatable
+class User extends Authenticatable implements JWTSubject
 {
     use HasFactory, Notifiable;
+
+    protected $table = 'users';
 
     /**
      * The attributes that are mass assignable.
      *
      * @var array<int, string>
      */
-    protected $table = 'tbl_ss_users';
-
     protected $fillable = [
         'name',
         'phone_number',
@@ -27,7 +27,6 @@ class User extends Authenticatable
         'profile_photo',
         'is_active',
         'password',
-        'role',
         'is_deleted',
     ];
 
@@ -42,17 +41,14 @@ class User extends Authenticatable
     ];
 
     /**
-     * Get the attributes that should be cast.
+     * The attributes that should be cast.
      *
-     * @return array<string, string>
+     * @var array<string, string>
      */
-    protected function casts(): array
-    {
-        return [
-            'email_verified_at' => 'datetime',
-            'password' => 'hashed',
-        ];
-    }
+    protected $casts = [
+        'email_verified_at' => 'datetime',
+        'password' => 'hashed',
+    ];
 
     /**
      * Get the user that created this user.
@@ -62,9 +58,19 @@ class User extends Authenticatable
         return $this->belongsTo(User::class, 'created_by');
     }
 
-    // public function userDetails()
-    // {
-    //     return $this->hasMany(UserDetails::class);
-    // }
+    /**
+     * JWTSubject methods required by tymon/jwt-auth
+     */
 
+    // Get the identifier that will be stored in the subject claim of the JWT
+    public function getJWTIdentifier()
+    {
+        return $this->getKey(); // This returns the primary key of the user (usually id)
+    }
+
+    // Return a key-value array, containing any custom claims to be added to the JWT
+    public function getJWTCustomClaims()
+    {
+        return []; // You can add custom claims here if necessary
+    }
 }

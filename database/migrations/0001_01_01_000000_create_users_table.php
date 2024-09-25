@@ -20,7 +20,6 @@ return new class extends Migration
             $table->text('bio')->nullable();
             $table->string('profile_photo')->nullable();
             $table->tinyInteger('is_active')->default((1));
-            $table->tinyInteger('role')->default(0);
             $table->timestamp('email_verified_at')->nullable();
             $table->string('password');
             $table->tinyInteger('is_deleted')->default((0));
@@ -44,7 +43,7 @@ return new class extends Migration
             $table->integer('last_activity')->index();
         });
 
-        Schema::table('tbl_ss_users', function (Blueprint $table) {
+        Schema::table('users', function (Blueprint $table) {
             $table->unsignedBigInteger('created_by')->nullable()->after('email');
             $table->foreign('created_by')->references('id')->on('users')->onDelete('set null');
         });
@@ -55,10 +54,10 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('tbl_ss_users');
+        Schema::dropIfExists('users');
         Schema::dropIfExists('password_reset_tokens');
         Schema::dropIfExists('sessions');
-        Schema::table('tbl_ss_users', function (Blueprint $table) {
+        Schema::table('tusers', function (Blueprint $table) {
             $table->dropForeign(['created_by']);
             $table->dropColumn('created_by');
         });

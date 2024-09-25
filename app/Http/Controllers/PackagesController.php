@@ -17,6 +17,8 @@ use App\Models\Coupon;
 use App\Models\Pricing;
 use Illuminate\Support\Facades\Http;
 use Psy\Output\Theme;
+use App\Models\BookingDetails;
+use App\Models\CardDetails;
 
 class PackagesController extends Controller
 {
@@ -60,28 +62,112 @@ class PackagesController extends Controller
     // Search Packages with dynamic query params
     public function packageSearch(Request $request)
     {
-        $depdate = Carbon::createFromFormat('Y-m-d', $request->input('departureDate'))->format('d/m/Y');
+        $apiUrl = 'http://87.102.127.86:8119/search/searchoffers.dll';
+        $depdate = \Carbon\Carbon::createFromFormat('Y-m-d', $request->input('departureDate'))->format('d/m/Y');
+        $duration = preg_replace('/\D/', '', $request->input('duration')); 
+        $adults = preg_replace('/\D/', '', $request->input('adults'));
+        $airportCode = $request->input('aiportCode');
+        $flex = $request->input('flex');
         $queryParams = $this->buildQueryParams($request, [
-            'agtid' => '144',
+            'agtid' => '100',
             'page' => 'HOLSEARCH',
             'platform' => 'WEB',
-            'depart' => $request->input('airportCode'),
+            'depart' => $airportCode,
             'countryid' => $request->input('destination'),
             'depdate' => $depdate,
-            'flex' => $request->input('flex'),
-            'adults' => preg_replace('/\D/', '', $request->input('adults')),
+            'flex' => $flex,
+            'board' => '',
+            'star' => '',
+            'adults' => $adults,
             'children' => '0',
-            'duration' => preg_replace('/\D/', '', $request->input('duration')),
+            'duration' => $duration,
             'minprice' => $request->input('minprice', ''),
             'maxprice' => $request->input('maxprice', ''),
             'type' => $request->input('type', 'DPCP'),
             'output' => 'JSON',
         ]);
-
-        $packages = $this->getPackagesFromApi($queryParams);
-        $sortedPackages = $this->sortAndFilterPackages($packages, $request);
-
-        return response()->json(['message' => 'success', 'data' => ['packages' => $sortedPackages], 'statusCode' => 200]);
+    
+        $queryString = http_build_query($queryParams);
+        $rawData = file_get_contents("{$apiUrl}?{$queryString}");
+        $trimmedData = trim($rawData);
+        $response = mb_convert_encoding($trimmedData, 'UTF-8', 'UTF-8');
+        $packages = json_decode($response, true)['Offers'] ?? [];
+        if (json_last_error() !== JSON_ERROR_NONE) {
+            throw new \Exception('JSON Decode Error: ' . json_last_error_msg());
+        }
+        $packagesArray = is_array($packages) ? $packages : [];
+        $packagesArray = array_slice($packages, 0, 60); 
+    
+        $sortOption = $request->input('sort', ''); // Default to an empty string if not set
+        // Apply sorting if requested
+        if ($sortOption) {
+            usort($packagesArray, function ($a, $b) use ($sortOption) {
+                $sellPriceA = $a['Sellprice'] ?? 0;
+                $sellPriceB = $b['Sellprice'] ?? 0;
+                $durationA = $a['Duration'] ?? 0;
+                $durationB = $b['Duration'] ?? 0;
+    
+                switch ($sortOption) {
+                    case 'price_asc':
+                        return $sellPriceA <=> $sellPriceB;
+                    case 'price_desc':
+                        return $sellPriceB <=> $sellPriceA;
+                    case 'duration_asc':
+                        return $durationA <=> $durationB;
+                    case 'duration_desc':
+                        return $durationB <=> $durationA;
+                    default:
+                        return 0;
+                }
+            });
+        }
+    
+        // Apply budget filter if requested
+        $priceRanges = [
+            'under_100' => [0, 100],
+            '100_500' => [100, 500],
+            '500_1000' => [500, 1000],
+            '1000_2000' => [1000, 2000],
+            'over_2000' => [2000, PHP_INT_MAX],
+        ];
+    
+        $budgetFilter = $request->input('budget');
+        if (isset($priceRanges[$budgetFilter])) {
+            [$minPrice, $maxPrice] = $priceRanges[$budgetFilter];
+            $packagesArray = array_filter($packagesArray, function ($package) use ($minPrice, $maxPrice) {
+                return isset($package['Sellprice']) && ((float) $package['Sellprice']) >= $minPrice && ((float) $package['Sellprice']) <= $maxPrice;
+            });
+        }
+    
+        // Apply activity filtering if requested
+        if ($request->input('activities')) {
+            $selectedActivities = $request->input('activities', []);
+            $packagesArray = array_filter($packagesArray, function ($package) use ($selectedActivities) {
+                foreach ($selectedActivities as $activity) {
+                    if (strpos($package['Activities'], $activity) === false) {
+                        return false;
+                    }
+                }
+                return true;
+            });
+        }
+    
+        // Apply departure date filtering if requested
+        if ($request->input('departure_date')) {
+            $departureDate = $request->input('departure_date');
+            $packagesArray = array_filter($packagesArray, function ($package) use ($departureDate) {
+                return $package['OutboundDep'] === $departureDate;
+            });
+        }
+        
+        return response()->json([
+            'message' => 'success',
+            'data' => [
+                'packages' => $packagesArray,
+                'queryParams' => $request->query() ?: null,
+            ],
+            'statusCode' => 200
+        ]);
     }
 
     // Helper: Build Query Parameters
@@ -434,7 +520,7 @@ class PackagesController extends Controller
     public function package_checkout(Request $request)
     {
         if (!Session::has('expiry_time')) {
-            $sessionLifetime = (int) config('session.lifetime', 30); // Ensure it's an integer
+            $sessionLifetime = (int) config('session.lifetime', 30);
             $expiryTime = now()->addMinutes($sessionLifetime);
             Session::put('expiry_time', $expiryTime);
         } else {
@@ -442,17 +528,16 @@ class PackagesController extends Controller
         }
     
         $formattedExpiryTime = $expiryTime->toIso8601String();
-    
         // Auto-generating a unique booking ID
         $bookingId = strtoupper(Str::random(8));
-    
-        $checkout_package = $request->input('updatedPkg');
-    
         // Return data as JSON
         return response()->json([
-            'checkout_package' => $checkout_package,
-            'booking_id' => $bookingId,
-            'session_expiry' => $formattedExpiryTime,
+            'message' => 'success',
+            'data' => [
+                'booking_id' => $bookingId,
+                'session_expiry' => $formattedExpiryTime,
+            ],
+            'statusCode' => 200
         ]);
     }
     
@@ -472,71 +557,81 @@ class PackagesController extends Controller
         ];
     }
 
-    //Checking for Login User
-    public function checkLogin()
-    {
-        return response()->json(['isLoggedIn' => Auth::check()]);
-    }
+    // //Checking for Login User
+    // public function checkLogin()
+    // {
+    //     return response()->json(['isLoggedIn' => Auth::check()]);
+    // }
 
-    public function login(Request $request)
-    {
-        // Validate credentials
-        $credentials = $request->only('email', 'password');
+    // public function login(Request $request)
+    // {
+    //     // Validate credentials
+    //     $credentials = $request->only('email', 'password');
 
-        $request->validate([
-            'email' => 'required|email',
-            'password' => 'required|string|min:6',
-        ]);
+    //     $request->validate([
+    //         'email' => 'required|email',
+    //         'password' => 'required|string|min:6',
+    //     ]);
 
-        if (Auth::attempt($credentials)) {
-            // Authentication passed, return success response
-            return response()->json(['status' => 'success', 'user' => Auth::user()]);
-        }
+    //     if (Auth::attempt($credentials)) {
+    //         // Authentication passed, return success response
+    //         return response()->json(['status' => 'success', 'user' => Auth::user()]);
+    //     }
 
-        return response()->json(['status' => 'error', 'message' => 'Invalid credentials'], 401);
-    }
+    //     return response()->json(['status' => 'error', 'message' => 'Invalid credentials'], 401);
+    // }
 
     public function storePassengerDetails(Request $request)
     {
         try {
-            // Define validation rules
+            // Validate the incoming request
             $validator = Validator::make($request->all(), [
                 'passengers' => 'required|array',
                 'passengers.*.booking_id' => 'nullable|string|max:100',
-                'passengers.*.title' => 'nullable|in:Mr,Ms,Mrs,Ms,Miss,Dr',
+                'passengers.*.title' => 'nullable|in:Mr,Ms,Mrs,Miss,Dr',
                 'passengers.*.first_name' => 'required|string|max:255',
                 'passengers.*.surname' => 'required|string|max:255',
                 'passengers.*.email' => 'required|string|email|max:255',
                 'passengers.*.contact_number' => 'required|string|max:15',
                 'passengers.*.package_type' => 'nullable|string',
-                'passengers.*.package_id' => 'nullable|string',
                 'passengers.*.price' => 'required|numeric',
+                'booking_details' => 'required|array',
             ]);
-
-            // Check if the validation fails
+    
             if ($validator->fails()) {
                 return response()->json(['errors' => $validator->errors()], 422);
             }
-
-            $userId = Auth::id();
+    
             $passengerDetails = [];
-
+    
+            // Prepare booking details
+            $bookingDetailsData = $request->input('booking_details');
+            // $bookingDetailsData['booking_id'] = $bookingId; // Add the booking ID to the booking details
+    
+            // Save booking details, storing package_details as JSON
+            $bookingDetails = BookingDetails::create([
+                'booking_id' => $bookingDetailsData['booking_id'],
+                'refnum' => $bookingDetailsData['refnum'],
+                'package_details' => json_encode($bookingDetailsData), // Store as JSON
+            ]);
+    
+            // Loop over passengers and save them
             foreach ($request->input('passengers') as $passengerData) {
-                $passengerData['user_id'] = $userId;
+                $passengerData['booking_id'] = $bookingDetails->booking_id; // Assign booking ID to passengers
                 $passengerDetails[] = PassengerDetails::create($passengerData);
             }
-
+    
             return response()->json([
-                'message' => 'Passenger details saved successfully.',
+                'message' => 'Passenger and booking details saved successfully.',
+                'bookingDetails' => $bookingDetails,
                 'passengerDetails' => $passengerDetails,
             ], 201);
         } catch (\Exception $e) {
-            print_r($e->getMessage());
-            print_r($e->getLine());
-            Log::error('Error saving passenger details', ['error' => $e->getMessage()]);
-            return response()->json(['error' => 'Internal Server Error'], 500);
+            return response()->json(['error' => $e->getMessage()], 500);
         }
     }
+    
+    
 
 
     public function verifyPromoCode(Request $request)
@@ -554,6 +649,94 @@ class PackagesController extends Controller
             return response()->json(['success' => false, 'message' => 'Invalid promo code']);
         }
     }
+
+    public function saveBookingDetails(Request $request)
+    {
+        try {
+            // Validate the incoming booking request
+            $validator = Validator::make($request->all(), [
+                'booking_id' => 'nullable|string|max:100',
+                'refnum' => 'required|string|max:100',
+                'type' => 'required|string|max:10',
+                'hotelsupplier' => 'required|string|max:255',
+                'flightsuppler' => 'required|string|max:255',
+                'depaptcode' => 'required|string|max:10',
+                'arraptcode' => 'required|string|max:10',
+                'depaptname' => 'required|string|max:255',
+                'arraptname' => 'required|string|max:255',
+                'duration' => 'required|numeric',
+                'flightnetprice' => 'required|numeric',
+                'hotelnetprice' => 'required|numeric',
+                'baggageprice' => 'nullable|numeric',
+                'boardbasis' => 'nullable|string|max:255',
+                'hotelname' => 'required|string|max:255',
+                'image' => 'nullable|string|max:255',
+                'starrating' => 'nullable|numeric',
+                'latitude' => 'nullable|numeric',
+                'longitude' => 'nullable|numeric',
+                'outbounddep' => 'required|date_format:Y-m-d H:i',
+                'outboundarr' => 'required|date_format:Y-m-d H:i',
+                'outboundfltnum' => 'required|string|max:20',
+                'inbounddep' => 'required|date_format:Y-m-d H:i',
+                'inboundarr' => 'required|date_format:Y-m-d H:i',
+                'inboundfltnum' => 'required|string|max:20',
+                'sellprice' => 'required|numeric',
+                'resortname' => 'required|string|max:255',
+                'roomtype' => 'required|string|max:255',
+                'giatacode' => 'nullable|string|max:50',
+                'ourhtlid' => 'nullable|string|max:50',
+                'supphtlid' => 'nullable|string|max:50',
+                'brochurecode' => 'nullable|string|max:50',
+                'tticode' => 'nullable|string|max:50',
+                'content' => 'nullable|string',
+            ]);
+    
+            if ($validator->fails()) {
+                return response()->json(['errors' => $validator->errors()], 422);
+            }
+    
+            // Create booking details
+            $bookingDetails = BookingDetails::create($request->all());
+    
+            return response()->json([
+                'message' => 'Booking details saved successfully.',
+                'bookingDetails' => $bookingDetails,
+            ], 201);
+        } catch (\Exception $e) {
+            return response()->json(['error' => $e->getMessage()], 500);
+        }
+    }
+    
+    
+
+    public function saveCardDetails(Request $request)
+    {
+        try {
+            // Validate the card details
+            $validator = Validator::make($request->all(), [
+                'booking_id' => 'required|string|max:255',
+                'card_number' => 'required|string|max:255',
+                'card_holder_name' => 'required|string|max:255',
+                'expiry_date' => 'required|string|max:50',
+                'cvv' => 'required|string|max:4',
+                'billing_address' => 'nullable|string|max:255',
+            ]);
+    
+            if ($validator->fails()) {
+                return response()->json(['errors' => $validator->errors()], 422);
+            }
+    
+            $cardDetails = CardDetails::create($request->all());
+    
+            return response()->json([
+                'success' => true,
+                'message' => 'Card details saved successfully.'
+            ], 201);
+        } catch (\Exception $e) {
+            return response()->json(['error' => $e->getMessage()], 500);
+        }
+    }
+    
 
     // public function getPassengerDetails()
     // {

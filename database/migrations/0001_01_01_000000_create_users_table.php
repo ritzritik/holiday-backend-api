@@ -11,7 +11,7 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('users', function (Blueprint $table) {
+        Schema::create('tbl_ss_users', function (Blueprint $table) {
             $table->id();
             $table->string('name');
             $table->string('phone_number');
@@ -20,7 +20,6 @@ return new class extends Migration
             $table->text('bio')->nullable();
             $table->string('profile_photo')->nullable();
             $table->tinyInteger('is_active')->default((1));
-            $table->tinyInteger('role')->default(0);
             $table->timestamp('email_verified_at')->nullable();
             $table->string('password');
             $table->tinyInteger('is_deleted')->default((0));
@@ -58,7 +57,7 @@ return new class extends Migration
         Schema::dropIfExists('users');
         Schema::dropIfExists('password_reset_tokens');
         Schema::dropIfExists('sessions');
-        Schema::table('users', function (Blueprint $table) {
+        Schema::table('tusers', function (Blueprint $table) {
             $table->dropForeign(['created_by']);
             $table->dropColumn('created_by');
         });

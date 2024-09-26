@@ -21,7 +21,7 @@ class CouponController extends Controller
 
     public function create()
     {
-        if (Auth::user()->user_type == 1 || Auth::user()->user_type == 2) {
+        if (Auth::guard('admin')->user()->user_type == 1 || Auth::guard('admin')->user()->user_type == 2) {
             return view('admin.coupon.create');
         } else {
             return redirect()->back()->withErrors(['error' => 'You are not authorized.']);
@@ -42,7 +42,7 @@ class CouponController extends Controller
         $coupon->discount = $request->discount;
         $coupon->active = $request->active;
         $coupon->expiry_date = $request->expiry_date;
-        $coupon->created_by = Auth::user()->id;
+        $coupon->created_by = Auth::guard('admin')->user()->id;
         $coupon->save();
 
         return redirect('/admin/coupon')->with('success', 'Coupon created successfully');
@@ -51,7 +51,11 @@ class CouponController extends Controller
     public function edit($id)
     {
         $coupon = Coupon::find($id);
-        return view('admin.coupon.edit', compact('coupon'));
+        if (Auth::guard('admin')->user()->user_type == 1 || Auth::guard('admin')->user()->user_type == 2) {
+            return view('admin.coupon.edit', compact('coupon'));
+        } else {
+            return redirect()->back()->withErrors(['error' => 'You are not authorized.']);
+        }
     }
 
     public function update(Request $request, $id)
@@ -68,7 +72,7 @@ class CouponController extends Controller
         $coupon->discount = $request->discount;
         $coupon->active = $request->active;
         $coupon->expiry_date = $request->expiry_date;
-        $coupon->updated_by = Auth::user()->id;
+        $coupon->updated_by = Auth::guard('admin')->user()->id;
         $coupon->save();
 
         return redirect('/admin/coupon')->with('success', 'Coupon updated successfully');

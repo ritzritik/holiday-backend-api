@@ -56,9 +56,9 @@ class HotelsController extends Controller
         ]);
     }
 
-    public function hotel_search(Request $request)
+    public function hotelSearch(Request $request)
     {
-        $apiUrl = env('API_URL');
+        $apiUrl = 'http://87.102.127.86:8119/search/searchoffers.dll';
         $hoteldestination = $request->input('hoteldestination');
         $depdate = $request->input('departureDate');
         $formattedDepdate = \Carbon\Carbon::createFromFormat('Y-m-d', $depdate)->format('d/m/Y');
@@ -115,8 +115,12 @@ class HotelsController extends Controller
 
         // Return JSON response
         return response()->json([
-            'hotels' => array_values($hotelsArray),
-            'queryParams' => $request->query() ?: null,
+            'message' => 'success',
+            'data' => [
+                'hotels' => array_values($hotelsArray),
+                'queryParams' => $request->query() ?: null,
+            ],
+            'statusCode' => 200
         ]);
     }
 

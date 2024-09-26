@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
+use App\Models\AuthUser;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
@@ -10,8 +11,8 @@ class LoginController extends Controller
 {
     public function showAdminLoginForm()
     {
-        if (Auth::check()) {
-            return redirect()->route('admin.dashboard'); // Redirect to admin dashboard if already logged in
+        if (Auth::guard('admin')->check()) {
+            return view('admin.dashboard'); // Redirect to admin dashboard or other protected route
         }
         return view('admin.auth.login');
     }
@@ -31,12 +32,13 @@ class LoginController extends Controller
 
         // Retrieve credentials
         $credentials = $request->only('email', 'password');
+        $user = AuthUser::where('email', $request->email)
+            ->whereIn('user_type', [1, 2, 3])
+            ->first();
 
-        // Attempt to log the user in
-        if (Auth::attempt($credentials)) {
-            $user = Auth::user();
-
-            // Check user type and redirect accordingly
+        // Check if user exists and has a valid user type
+        if ($user && Auth::guard('admin')->attempt($credentials)) {
+            // User is authenticated, redirect based on user type
             switch ($user->user_type) {
                 case 1:
                     return redirect()->route('admin.dashboard')->with('message', 'You are logged in as Admin.');
@@ -45,27 +47,30 @@ class LoginController extends Controller
                 case 3:
                     return redirect()->route('editor.dashboard')->with('message', 'You are logged in as Editor.');
                 default:
-                    Auth::logout(); // Log out if user_type is unexpected
+                    Auth::guard('admin')->logout(); // Log out if user_type is unexpected
                     return back()->withErrors(['email' => 'Unauthorized access.']);
             }
-        } else {
-            return back()->withErrors([
-                'email' => 'The provided credentials do not match our records.',
-            ]);
         }
+
+        return back()->withErrors([
+            'email' => 'The provided credentials do not match our records.',
+        ]);
     }
 
     public function logout(Request $request)
     {
-        Auth::logout(); // Log the user out
+        if (Auth::guard('admin')->check()) {
+            Auth::guard('admin')->logout();  // Log out from admin guard
+        } else {
+            Auth::logout();  // Log out from the default guard (user)
+        }
 
-        // Optionally, invalidate the user's session
+        // Invalidate session and regenerate CSRF token
         $request->session()->invalidate();
-
-        // Regenerate the CSRF token to prevent session fixation
         $request->session()->regenerateToken();
 
-        return response()->json(['message' => 'Successfully logged out']);
+        // Redirect to the appropriate login page
+        return redirect('/login');
     }
 
     //composer require tymon/jwt-auth

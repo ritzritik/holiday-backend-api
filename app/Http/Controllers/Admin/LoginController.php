@@ -54,12 +54,12 @@ class LoginController extends Controller
         ]);
 
         $credentials = $request->only('email', 'password');
-        $user = User::where('email', $request->email)
-            ->whereIn('user_type', [1, 2])
+        $user = AuthUser::where('email', $request->email)
+            ->whereIn('user_type', [1, 2, 3])
             ->first();
 
         if ($user && Hash::check($request->password, $user->password)) {
-            Auth::login($user, $request->get('remember'));
+            Auth::guard('admin')->login($user, $request->get('remember'));
             return view('admin.dashboard')->with('message', 'You are logged in as Admin.');
             // return redirect()->route('admin.dashboard')->with('message', 'You are logged in as Admin.');
         } else {
@@ -100,9 +100,17 @@ class LoginController extends Controller
      */
     public function logout(Request $request)
     {
-        Auth::logout();
+        if (Auth::guard('admin')->check()) {
+            Auth::guard('admin')->logout();  // Log out from admin guard
+        } else {
+            Auth::logout();  // Log out from the default guard (user)
+        }
+
+        // Invalidate session and regenerate CSRF token
         $request->session()->invalidate();
         $request->session()->regenerateToken();
+
+        // Redirect to the appropriate login page
         return redirect('/login');
     }
 

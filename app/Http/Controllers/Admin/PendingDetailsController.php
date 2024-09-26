@@ -46,7 +46,6 @@ class PendingDetailsController extends Controller
         // Fetch all PassengerDetails with payment_status 0
         $passengerDetails = PassengerDetails::where('payment_status', 0)->get();
 
-        // Group passenger details by booking_id
         $groupedByBooking = $passengerDetails->groupBy('booking_id');
 
         // Initialize an empty collection for packages

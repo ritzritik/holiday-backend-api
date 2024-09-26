@@ -74,7 +74,7 @@
         </div>
         <div class="content">
             <h2>Thank You for Registering!</h2>
-            <p>Dear {{ $username }},</p>
+            <p>Dear {{ $name }},</p>
             <p>
                 We are thrilled to welcome you to Sky Sea Holidays, your gateway to exciting holiday packages and unforgettable experiences! Thank you for registering on our website. We are committed to providing you with the best deals and the most memorable vacations.
             </p>
@@ -82,7 +82,7 @@
                 Whether you're looking for a serene beach getaway, an adventurous mountain trek, or a cultural city tour, we have something special for you. As a registered member, you'll be the first to know about our exclusive offers and latest holiday packages.
             </p>
             <div class="button-container">
-                <a href="[Link to Holiday Packages]" class="button">Explore Holiday Packages</a>
+                <a href="https://main--skyseaholidays.netlify.app/package" class="button">Explore Holiday Packages</a>
             </div>
             <p>
                 We're excited to help you plan your next holiday adventure. If you have any questions or need assistance, feel free to contact our support team at any time.

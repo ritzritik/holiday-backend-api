@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use App\Models\Post;
 
 class PostController extends Controller
@@ -37,7 +38,9 @@ class PostController extends Controller
     public function index()
     {
         $posts = Post::all();
-        return view('admin.post.index', compact('posts'));
+        if (Auth::guard('admin')->user()->user_type == 1 || Auth::guard('admin')->user()->user_type == 2 || Auth::guard('admin')->user()->user_type == 3) {
+            return view('admin.post.index', compact('posts'));
+        }
     }
 
     //Show a Post
@@ -101,7 +104,4 @@ class PostController extends Controller
         return response()->json(['danger' => 'Post deleted successfully.']);
         // return redirect()->route('admin.posts.index')->with('success', 'Post deleted successfully.');
     }
-
-
-    
 }

@@ -2,6 +2,8 @@
 
 namespace App\Providers;
 
+use App\Http\Middleware\CheckAdminRole;
+use App\Http\Middleware\RedirectIfAuthenticatedAdmin;
 use Illuminate\Support\ServiceProvider;
 
 class AppServiceProvider extends ServiceProvider
@@ -11,7 +13,8 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
-        //
+        app('router')->aliasMiddleware('guest.admin', RedirectIfAuthenticatedAdmin::class);
+        app('router')->aliasMiddleware('check.admin', CheckAdminRole::class);
     }
 
     /**

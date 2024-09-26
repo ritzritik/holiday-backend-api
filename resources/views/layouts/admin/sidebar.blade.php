@@ -43,7 +43,7 @@
             class="collapse {{ Request::is('admin/user/create') || Request::is('admin/users') || Request::is('admin/user/trash') ? 'show' : '' }}"
             aria-labelledby="headingCategory" data-parent="#accordionSidebar">
             <div class="bg-white py-2 collapse-inner rounded">
-                @if (Auth::user()->user_type == 1)
+                @if (Auth::guard('admin')->user()->user_type == 1)
                     <a class="collapse-item {{ Request::is('admin/user/create') ? 'active' : '' }}"
                         href="{{ url('/admin/user/create') }}">Add User</a>
                 @endif

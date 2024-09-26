@@ -68,7 +68,9 @@ Route::post('/flights/payment/checkout', [FlightsController::class, 'flightPayme
 // Route::get('/hotels', [HotelsController::class, 'index'])->name('hotel.index');
 Route::get('/hotels/search', [HotelsController::class, 'hotelSearch'])->name('hotel.search');
 
-Route::post('/hotel/booking', [HotelsController::class, 'hotel_booking_details'])->name('hotel.hotel-booking-details');
+Route::post('/hotel/booking/details', [HotelsController::class, 'hotel_booking_details'])->name('hotel.hotel-booking-details');
+
+Route::get('/hotel/checkout', [HotelsController::class, 'hotel_checkout']);
 
 Route::get('/skiholidays', [SkiHolidaysController::class, 'index'])->name('ski.index');
 Route::get('/ski/search', [SkiHolidaysController::class, 'ski_holiday_search'])->name('ski.search');

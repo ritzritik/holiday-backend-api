@@ -32,11 +32,15 @@
                     @csrf
                     <div class="mb-3">
                         <label for="name">Name</label>
-                        <input class="form-control" type="text" name="name" id="username" value="{{ $user->name }}" required>
+                        <input class="form-control" type="text" name="name" id="name" value="{{ $user->name }}" required>
                     </div>
                     <div class="mb-3">
                         <label for="email">Email</label>
                         <input class="form-control" type="email" name="email" id="email" value="{{ $user->email }}" style="cursor:not-allowed" disabled>
+                    </div>
+                    <div class="mb-3">
+                        <label for="username">Username</label>
+                        <input class="form-control" type="text" name="username" id="username" value="{{ $user->username }}" style="cursor:not-allowed" disabled>
                     </div>
                     <div class="mb-3">
                         <label for="password">Update Password</label>

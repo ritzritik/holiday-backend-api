@@ -611,7 +611,7 @@ class PackagesController extends Controller
             // Save booking details, storing package_details as JSON
             $bookingDetails = BookingDetails::create([
                 'booking_id' => $bookingDetailsData['booking_id'],
-                'refnum' => $bookingDetailsData['refnum'],
+                'refnum' => isset($bookingDetailsData['refnum']) ? $bookingDetailsData['refnum'] : null,
                 'package_details' => json_encode($bookingDetailsData), // Store as JSON
             ]);
     

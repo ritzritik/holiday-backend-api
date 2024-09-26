@@ -127,7 +127,7 @@ class HotelsController extends Controller
     public function hotel_booking_details(Request $request)
     {
         $hotels = $request['hotel'];
-        $apiUrl = env('API_URL');
+        $apiUrl = 'http://87.102.127.86:8119/search/searchoffers.dll';
 
         $queryParams = [
             'agtid' => '144',
@@ -159,9 +159,13 @@ class HotelsController extends Controller
         $hotelInfoArray = json_decode($response, true)['content'] ?? [];
 
         return response()->json([
-            'selected_hotel' => $hotels,
-            'calendarPrices' => $calendarPricesArray,
-            'hotelInfo' => $hotelInfoArray,
+            'message' => 'success',
+            'data' => [
+                'selected_hotel' => $hotels,
+                'calendarPrices' => $calendarPricesArray,
+                'hotelInfo' => $hotelInfoArray,
+            ],
+            'statusCode' => 200
         ]);
     }
 
@@ -171,16 +175,21 @@ class HotelsController extends Controller
             $sessionLifetime = (int) config('session.lifetime', 30);
             $expiryTime = now()->addMinutes($sessionLifetime);
             Session::put('expiry_time', $expiryTime);
+        } else {
+            $expiryTime = Session::get('expiry_time');
         }
-
-        $checkout_hotel = $request->input('selected_hotel');
+    
+        $formattedExpiryTime = $expiryTime->toIso8601String();
+        // Auto-generating a unique booking ID
         $bookingId = strtoupper(Str::random(8));
-        $formattedExpiryTime = Session::get('expiry_time')->toIso8601String();
-
+        // Return data as JSON
         return response()->json([
-            'checkout_hotel' => $checkout_hotel,
-            'booking_id' => $bookingId,
-            'session_expiry' => $formattedExpiryTime,
+            'message' => 'success',
+            'data' => [
+                'booking_id' => $bookingId,
+                'session_expiry' => $formattedExpiryTime,
+            ],
+            'statusCode' => 200
         ]);
     }
 }

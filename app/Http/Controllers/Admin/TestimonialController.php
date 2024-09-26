@@ -47,10 +47,10 @@ class TestimonialController extends Controller
 
         // Set the status dynamically based on the form submission
         $testimonial->status = $request->status;
-        if (Auth::user()->user_type == 1) {
-            $testimonial->created_by = Auth::user()->id;
+        if (Auth::guard('admin')->user()->user_type == 1 || Auth::guard('admin')->user()->user_type == 2) {
+            $testimonial->created_by = Auth::guard('admin')->user()->id;
         } else {
-            $testimonial->created_by = Auth::user()->id;
+            $testimonial->created_by = Auth::guard('admin')->user()->id;
         }
 
         // Save the testimonial

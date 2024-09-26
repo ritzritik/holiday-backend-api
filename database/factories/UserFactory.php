@@ -28,7 +28,7 @@ class UserFactory extends Factory
             'email_verified_at' => now(),
             'password' => bcrypt('password'), // default password
             'remember_token' => Str::random(10),
-            'role' => 0, // 0: regular user, change as needed
+            'user_type' => 0, // 0: regular user, change as needed
             'is_active' => 1, // active by default
             'is_deleted' => 0, // not deleted by default
         ];

@@ -151,8 +151,8 @@
         <li class="nav-item dropdown no-arrow">
             <a class="nav-link dropdown-toggle" href="#" id="userDropdown" role="button" data-toggle="dropdown"
                 aria-haspopup="true" aria-expanded="false">
-                @if (Auth::check())
-                    <span class="mr-2 d-none d-lg-inline text-white small">{{ Auth::user()->name }}</span>
+                @if (Auth::guard('admin')->check())
+                    <span class="mr-2 d-none d-lg-inline text-white small">{{ Auth::guard('admin')->user()->name }}</span>
                 {{-- @elseif (Auth::guard('web')->check())
                     <span class="mr-2 d-none d-lg-inline text-white small">{{ Auth::guard('web')->user()->name }}</span> --}}
                 @else
@@ -162,7 +162,7 @@
             </a>
             <!-- Dropdown - User Information -->
             <div class="dropdown-menu dropdown-menu-right shadow animated--grow-in" aria-labelledby="userDropdown">
-                <a class="dropdown-item" href="{{ url('/profile') }}">
+                <a class="dropdown-item"  href="{{ url('/admin/profile') }}">
                     <i class="fas fa-user fa-sm fa-fw mr-2 text-gray-400"></i>
                     Profile
                 </a>

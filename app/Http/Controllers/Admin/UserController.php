@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Models\AuthUser;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use App\Models\User;
@@ -15,7 +16,7 @@ class UserController extends Controller
 {
     public function create()
     {
-        if (Auth::user()->id == 1) {
+        if (Auth::guard('admin')->user()->id == 1) {
             return view('admin.user.create');
         } else {
             return redirect()->back()->withErrors(['error' => 'You are not authorized.']);
@@ -38,26 +39,27 @@ class UserController extends Controller
         $user->email = $request->email;
         $user->password = bcrypt($request->password);
         $user->user_type = $request->user_type;
-        $user->created_by =Auth::user()->id;;
+        $user->created_by =Auth::guard('admin')->user()->id;;
         $user->save();
         $activation_code = Str::random(64);
 
-        // Mail::send('admin.user.emails.activation_email_Html', [
-        //     'activation_code' => $activation_code,
-        //     'username' => $request->name
-        // ], function ($message) use($request) {
-        //     $message->to($request->email, $request->name);
-        //     $message->subject('You have registered');
-        // });
+        Mail::send('admin.user.emails.activation_email_Html', [
+            'activation_code' => $activation_code,
+            'name' => $request->name
+        ], function ($message) use($request) {
+            $message->to($request->email, $request->name);
+            $message->subject('You have registered');
+        });
 
         return response()->json(['success' => 'User Created Successfully'], 200);
     }
 
     public function index()
     {
-        $users = User::where([
+        $users = AuthUser::where([
             ['is_active', 1],
-            ['is_deleted', 0]
+            ['is_deleted', 0],
+            ['id', '>', 1]
         ])->with('creator')->get();
 
         return view('admin.user.index', compact('users'));
@@ -65,7 +67,7 @@ class UserController extends Controller
 
     public function edit($id)
     {
-        $user = User::find($id);
+        $user = AuthUser::find($id);
         if ($user) {
             return view('admin.user.edit', compact('user'));
         } else {
@@ -75,7 +77,7 @@ class UserController extends Controller
 
     public function update(Request $request, $id)
     {
-        $user = User::find($id);
+        $user = AuthUser::find($id);
         if ($user) {
             $user->name = $request->name ? $request->name : $user->name;
             if ($request->password) {
@@ -116,7 +118,7 @@ class UserController extends Controller
             $user->update([
                 'is_deleted' => 1,
                 'updated_at' => now(),
-                'updated_by' => Auth::user()->id,
+                'updated_by' => Auth::guard('admin')->user()->id,
             ]);
 
             DB::commit(); // Commit the transaction
@@ -131,7 +133,7 @@ class UserController extends Controller
 
     public function delete($id)
     {
-        $user = User::find($id);
+        $user = AuthUser::find($id);
         if ($user) {
             $user->delete();
             return redirect()->back()->with('success', 'User Deleted Permanently!');
@@ -155,7 +157,7 @@ class UserController extends Controller
             $user->update([
                 'is_deleted' => 0,
                 'updated_at' => now(),
-                'updated_by' => Auth::user()->id,
+                'updated_by' => Auth::guard('admin')->user()->id,
             ]);
 
             DB::commit(); // Commit the transaction
@@ -169,7 +171,7 @@ class UserController extends Controller
 
     public function trash()
     {
-        $trashed_users = User::where('is_deleted', 1)->get();
+        $trashed_users = AuthUser::where('is_deleted', 1)->get();
         return view('admin.user.trash', compact('trashed_users'));
     }
 }

@@ -65,8 +65,8 @@ Route::post('/flights/alternate/search', [FlightsController::class, 'alternateFl
 
 Route::post('/flights/payment/checkout', [FlightsController::class, 'flightPayment'])->name('flight.payment');
 
-Route::get('/hotels', [HotelsController::class, 'index'])->name('hotel.index');
-Route::get('/hotels/search', [HotelsController::class, 'hotel_search'])->name('hotel.search');
+// Route::get('/hotels', [HotelsController::class, 'index'])->name('hotel.index');
+Route::get('/hotels/search', [HotelsController::class, 'hotelSearch'])->name('hotel.search');
 
 Route::post('/hotel/booking', [HotelsController::class, 'hotel_booking_details'])->name('hotel.hotel-booking-details');
 

@@ -9,7 +9,7 @@ use Illuminate\Support\Facades\Auth;
 use App\Models\User;
 
 use Illuminate\Support\Facades\Mail;
-use Pest\Support\Str;
+use Illuminate\Support\Str;
 use Illuminate\Support\Facades\DB;
 
 class UserController extends Controller

@@ -13,7 +13,7 @@ class CheckAdminRole
      */
     public function handle($request, Closure $next)
     {
-        if (Auth::guard('admin')->check() && (Auth::guard('admin')->user()->role === 1 || Auth::guard('admin')->user()->role === 2)) {
+        if (Auth::guard('admin')->check() && (Auth::guard('admin')->user()->user_type === 1 || Auth::guard('admin')->user()->user_type === 2 || Auth::guard('admin')->user()->user_type === 3)) {
             return $next($request);
         }
         return redirect('/login')->with('error', 'Unauthorized Access');

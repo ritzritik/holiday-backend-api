@@ -7,15 +7,9 @@ use App\Http\Controllers\Auth\LoginController;
 use Illuminate\Support\Facades\Route;
 
 // Route::get('/login', [LoginController::class, 'showAdminLoginForm'])->name('admin.login');
-// Route::post('/login', [LoginController::class, 'adminLogin']);
-
-Route::middleware('guest.admin')->group(function () {
-    Route::get('/login', [LoginController::class, 'showAdminLoginForm'])->name('admin.login');
-    Route::post('/login', [LoginController::class, 'adminLogin']);
-});
+Route::post('/login', [LoginController::class, 'adminLogin']);
 Route::post('logout', [LoginController::class, 'logout'])->name('logout');
-
-Route::middleware(['check.admin', 'guest.admin'])->group(function () {
+Route::middleware(['check.admin'])->group(function () {
     Route::get('/dashboard', [AdminController::class, 'index'])->name('admin.dashboard');
     Route::get('/admin/profile', [AdminController::class, 'profile'])->name('admin.profile');
     Route::get('/admin/profile/edit/{id}', [AdminController::class, 'edit'])->name('admin.profile.edit');
@@ -48,6 +42,6 @@ Route::prefix('admin')->group(function () {
     Route::delete('/coupon/trash/delete/{id}', [CouponController::class, 'permanentDelete'])->name('admin.coupon.delete');
 });
 
-// Route::middleware(['guest.admin'])->group(function () {
-//     Route::get('/login', [LoginController::class, 'showAdminLoginForm'])->name('admin.login');
-// });
+Route::middleware(['guest.admin'])->group(function () {
+    Route::get('/login', [LoginController::class, 'showAdminLoginForm'])->name('admin.login');
+});

@@ -33,13 +33,12 @@ class LoginController extends Controller
         // Retrieve credentials
         $credentials = $request->only('email', 'password');
         $user = AuthUser::where('email', $request->email)
-        ->whereIn('user_type', [1, 2, 3])
-        ->first();
+            ->whereIn('user_type', [1, 2, 3])
+            ->first();
 
-        // Attempt to log the user in
-        if (Auth::guard('admin')->attempt($credentials)) {
-            $user = Auth::guard('admin')->user(); // Get the authenticated admin user
-            // Check user type and redirect accordingly
+        // Check if user exists and has a valid user type
+        if ($user && Auth::guard('admin')->attempt($credentials)) {
+            // User is authenticated, redirect based on user type
             switch ($user->user_type) {
                 case 1:
                     return redirect()->route('admin.dashboard')->with('message', 'You are logged in as Admin.');
@@ -48,14 +47,14 @@ class LoginController extends Controller
                 case 3:
                     return redirect()->route('editor.dashboard')->with('message', 'You are logged in as Editor.');
                 default:
-                Auth::guard('admin')->logout(); // Log out if user_type is unexpected
+                    Auth::guard('admin')->logout(); // Log out if user_type is unexpected
                     return back()->withErrors(['email' => 'Unauthorized access.']);
             }
-        } else {
-            return back()->withErrors([
-                'email' => 'The provided credentials do not match our records.',
-            ]);
         }
+
+        return back()->withErrors([
+            'email' => 'The provided credentials do not match our records.',
+        ]);
     }
 
     public function logout(Request $request)

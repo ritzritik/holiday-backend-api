@@ -37,10 +37,11 @@ class UserController extends Controller
         $user = new User();
         $user->name = $request->name;
         $user->email = $request->email;
+        $user->username = $request->username;
         $user->password = bcrypt($request->password);
         $user->user_type = $request->user_type;
         $user->created_by =Auth::guard('admin')->user()->id;;
-        $user->save();
+
         $activation_code = Str::random(64);
 
         Mail::send('admin.user.emails.activation_email_Html', [
@@ -50,7 +51,7 @@ class UserController extends Controller
             $message->to($request->email, $request->name);
             $message->subject('You have registered');
         });
-
+        $user->save();
         return response()->json(['success' => 'User Created Successfully'], 200);
     }
 

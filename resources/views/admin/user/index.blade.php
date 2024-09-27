@@ -44,6 +44,7 @@
                     <table id="userTable" class="table table-striped " style="width:100%">
                         <thead>
                             <tr>
+                                <th>Sno.</th>
                                 <th>User Name</th>
                                 <th>Email</th>
                                 <th>Create At</th>
@@ -52,8 +53,10 @@
                             </tr>
                         </thead>
                         <tbody>
+                            <?php $i=1; ?>
                             @foreach ($users as $user)
                                 <tr>
+                                    <td>{{ $i }}</td>
                                     <td>{{ $user->name }}</td>
                                     <td>{{ $user->email }}</td>
                                     {{-- <td><img src="{{asset('uploads/user/'.$user->name)}}" alt="" height="32"></td> --}}
@@ -65,7 +68,7 @@
                                             data-url="{{ url('admin/user/delete/' . $user->id) }}"
                                             class="btn btn-danger delete-btn"><i class="fas fa-trash-alt"></i> Delete</a>
                                     </td>
-
+                                    <?php $i++; ?>
                                 </tr>
                             @endforeach
 

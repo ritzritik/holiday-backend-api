@@ -22,12 +22,16 @@
             <form id="user-form" class="card shadow rounded p-3" enctype="multipart/form-data">
                 @csrf
                 <div class="mb-3">
-                    <label for="username">Name</label>
+                    <label for="name">Name</label>
                     <input class="form-control" type="text" name="name" id="name" required>
                 </div>
                 <div class="mb-3">
                     <label for="email">Email</label>
                     <input class="form-control" type="email" name="email" id="email" required>
+                </div>
+                <div class="mb-3">
+                    <label for="username">Username</label>
+                    <input class="form-control" type="email" name="username" id="username" required>
                 </div>
                 <div class="mb-3">
                     <label for="password">Create Password</label>

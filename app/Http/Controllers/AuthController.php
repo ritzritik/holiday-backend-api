@@ -6,8 +6,12 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Validator;
 use App\Models\User;
+use App\Models\UserBooking;
+use App\Models\UserVoucher;
 use Tymon\JWTAuth\Facades\JWTAuth;
 use Tymon\JWTAuth\Exceptions\JWTException;
+use Illuminate\Http\JsonResponse;
+use App\Models\ContactAdmin;
 
 class AuthController extends Controller
 {
@@ -256,6 +260,73 @@ class AuthController extends Controller
         return $finalImage; // Return the resized image resource
     }
 
+
+    public function all_bookings(Request $request) {
+        // Get the Authorization token from the request header
+        $token = $request->header('Authorization');
+        if (!$token) {
+            return response()->json(['error' => 'Token not provided'], 401);
+        }
+    
+        // Authenticate the user
+        $user = auth('api')->user();
+        if (!$user) {
+            return response()->json(['error' => 'Unauthorized'], 401);
+        }
+    
+        // Fetch all bookings for the authenticated user
+        $bookings = UserBooking::where('user_id', $user->id)->get();
+    
+        // Fetch all vouchers for the authenticated user
+        $vouchers = UserVoucher::where('user_id', $user->id)->get();
+    
+        // Return success response with the user's bookings and vouchers
+        return response()->json([
+            'message' => 'success',
+            'data' => [
+                'bookings' => $bookings,
+                'vouchers' => $vouchers
+            ],
+            'statusCode' => 200
+        ]);
+    }
+
+    public function contact_admin(Request $request) : JsonResponse
+    {
+        // Get the token and authenticate user
+        $token = $request->header('Authorization');
+        if (!$token) {
+            return response()->json(['error' => 'Token not provided'], 401);
+        }
+    
+        $user = auth('api')->user(); // Authenticate the user using the token
+        if (!$user) {
+            return response()->json(['error' => 'Unauthorized'], 401);
+        }
+    
+        // Validate the request data
+        $validatedData = $request->validate([
+            'name' => 'required|string|max:255',
+            'email' => 'required|email|max:255',
+            'message' => 'required|string',
+        ]);
+    
+        // Save the contact request to the database
+        $contact = ContactAdmin::create([
+            'user_id' => $user->id,
+            'name' => $validatedData['name'],
+            'email' => $validatedData['email'],
+            'message' => $validatedData['message'],
+        ]);
+    
+        return response()->json([
+            'message' => 'Contact request submitted successfully',
+            'statusCode' => 200,
+            'contact' => $contact
+        ]);
+    }
+    
+    
 
     /**
      * Delete user profile.

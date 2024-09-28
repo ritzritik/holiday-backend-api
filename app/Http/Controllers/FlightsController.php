@@ -2,8 +2,10 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Airport;
 use App\Models\Flight;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Config;
 use Inertia\Inertia;
 use Illuminate\Support\Facades\Response;
 use Illuminate\Support\Str;
@@ -118,28 +120,65 @@ class FlightsController extends Controller
         return response()->json(['error' => 'Invalid request method.'], 400);
     }
 
+    public function getOriginAirports()
+    {
+        // Load the airports configuration
+        $airports = Config::get('airports');
+
+        $originAirports = [];
+
+        // Iterate through the airport data
+        foreach ($airports as $letter => $airportList) {
+            foreach ($airportList as $airport) {
+                $cityCountry = explode(", ", $airport["Airport Name & City"]);
+                $city = $cityCountry[0];
+                $country = $cityCountry[1] ?? 'Unknown';
+
+                $originAirports[] = [
+                    'name' => $airport["Airport Name & City"],
+                    'iata' => $airport["IATA"],
+                    'icao' => $airport["ICAO"],
+                    'city' => $city,
+                    'country' => $country,
+                ];
+            }
+        }
+
+        return $originAirports;
+    }
     public function flightSearch(Request $request)
     {
         $apiUrl = 'http://87.102.127.86:8119/search/searchoffers.dll';
-        $depdate = \Carbon\Carbon::createFromFormat('Y-m-d', $request->input('departureDate'))->format('d/m/Y');
+        $airports = Config::get('airports');
+        $originAirports = $this->getOriginAirports();
+        $depdate = $request->input('departureDate');
+        $formattedDepdate = \Carbon\Carbon::createFromFormat('Y-m-d', $depdate)->format('d/m/Y');
+        $duration = preg_replace('/\D/', '', $request->input('duration','7'));
         $adults = preg_replace('/\D/', '', $request->input('adults'));
-        $children = (int) $request->input('children', 0);
+        // $children = (int) $request->input('children', 0);
         $airportCode = $request->input('aiportCode');
         $flex = $request->input('flex');
-        $duration = preg_replace('/\D/', '', $request->input('duration'));
+
+        $validAirportCodes = array_column($originAirports, 'iata');
+        if (!in_array($airportCode, $validAirportCodes)) {
+            return response()->json([
+                'message' => 'Invalid airport code',
+                'statusCode' => 400
+            ]);
+        }
 
         // Prepare the query parameters
         $queryParams = [
             'agtid' => '144',
             'page' => 'FLTSEARCH',
             'platform' => 'WEB',
-            'depart' => $airportCode,
+            'depart' => $originAirports,
             'arrive' => $request->input('destination'),
             'depdate' => $depdate,
-            'flex' => $flex,
             'duration' => $duration,
+            'flex' => $flex,
             'adults' => $adults,
-            'children' => '0',
+            'children' => 0,
             'output' => 'JSON',
         ];
 
@@ -151,11 +190,11 @@ class FlightsController extends Controller
         if (json_last_error() !== JSON_ERROR_NONE) {
             throw new \Exception('JSON Decode Error: ' . json_last_error_msg());
         }
-        $flightArray = is_array($flights) ? $flights : [];
-        $flightArray = array_slice($flights, 0, 60);
+        $flightsArray = is_array($flights) ? $flights : [];
+        $flightsArray = array_slice($flights, 0, 60);
 
         // Calculate and add total price per flight
-        foreach ($flightArray as &$flight) {
+        foreach ($flightsArray as &$flight) {
             $pricePerPerson = (float) ($flight['fltSellpricepp'] ?? 0);
 
             // Ensure adults and children have default values if not provided
@@ -175,7 +214,7 @@ class FlightsController extends Controller
         // Apply sorting
         $sortOption = $request->input('sort', '');
         if ($sortOption) {
-            usort($flightArray, function ($a, $b) use ($sortOption) {
+            usort($flightsArray, function ($a, $b) use ($sortOption) {
                 $priceA = $a['totalPrice'] ?? 0;
                 $priceB = $b['totalPrice'] ?? 0;
 
@@ -202,7 +241,7 @@ class FlightsController extends Controller
         $budgetFilter = $request->input('budget');
         if (isset($priceRanges[$budgetFilter])) {
             [$minPrice, $maxPrice] = $priceRanges[$budgetFilter];
-            $flightArray = array_filter($flightArray, function ($package) use ($minPrice, $maxPrice) {
+            $flightsArray = array_filter($flightsArray, function ($package) use ($minPrice, $maxPrice) {
                 $totalPrice = $package['totalPrice'] ?? 0;
                 return $totalPrice >= $minPrice && $totalPrice <= $maxPrice;
             });
@@ -221,8 +260,8 @@ class FlightsController extends Controller
                 'agtid' => '144',
                 'page' => 'FLTSEARCH',
                 'platform' => 'WEB',
-                'depart' => $request->input('origin', 'LGW'),
-                'arrive' => $request->input('destination', 'PFO'),
+                'depart' => $airportCode,
+                'arrive' => $request->input('destination'),
                 'depdate' => $depdate,
                 'flex' => '',
                 'duration' => $duration,
@@ -237,13 +276,13 @@ class FlightsController extends Controller
             if (json_last_error() !== JSON_ERROR_NONE) {
                 throw new \Exception('JSON Decode Error: ' . json_last_error_msg());
             }
-            $flightArray = is_array($flights) ? $flights : [];
+            $flightsArray = is_array($flights) ? $flights : [];
         }
 
         return response()->json([
             'message' => 'success',
             'data' => [
-                'flights' => $flightArray,
+                'flights' => $flightsArray,
                 'queryParams' => request()->query() ?: null,
             ],
             'statusCode' => 200

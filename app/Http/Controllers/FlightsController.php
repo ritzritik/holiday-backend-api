@@ -120,37 +120,134 @@ class FlightsController extends Controller
 
     public function flightSearch(Request $request)
     {
-        $apiUrl = env('API_URL');
-        $formattedDepdate = \Carbon\Carbon::createFromFormat('Y-m-d', $request->input('departureDate'))->format('d/m/Y');
-        $adults = (int) $request->input('adults', 1);
+        $apiUrl = 'http://87.102.127.86:8119/search/searchoffers.dll';
+        $depdate = \Carbon\Carbon::createFromFormat('Y-m-d', $request->input('departureDate'))->format('d/m/Y');
+        $adults = preg_replace('/\D/', '', $request->input('adults'));
         $children = (int) $request->input('children', 0);
-        $formattedDuration = preg_replace('/\D/', '', $request->input('duration'));
+        $airportCode = $request->input('aiportCode');
+        $flex = $request->input('flex');
+        $duration = preg_replace('/\D/', '', $request->input('duration'));
 
+        // Prepare the query parameters
         $queryParams = [
             'agtid' => '144',
             'page' => 'FLTSEARCH',
             'platform' => 'WEB',
-            'depart' => $request->input('origin', 'LGW'),
-            'arrive' => $request->input('destination', 'PFO'),
-            'depdate' => $formattedDepdate,
-            'flex' => $request->input('flex', ''),
-            'duration' => $formattedDuration,
+            'depart' => $airportCode,
+            'arrive' => $request->input('destination'),
+            'depdate' => $depdate,
+            'flex' => $flex,
+            'duration' => $duration,
+            'adults' => $adults,
+            'children' => '0',
             'output' => 'JSON',
         ];
 
         $queryString = http_build_query($queryParams);
-        $response = file_get_contents("{$apiUrl}?{$queryString}");
-        $flights = json_decode(trim($response), true)['Offers'] ?? [];
+        $rawData = file_get_contents("{$apiUrl}?{$queryString}");
+        $trimmedData = trim($rawData);
+        $response = mb_convert_encoding($trimmedData, 'UTF-8', 'UTF-8');
+        $flights = json_decode($response, true)['Offers'] ?? [];
+        if (json_last_error() !== JSON_ERROR_NONE) {
+            throw new \Exception('JSON Decode Error: ' . json_last_error_msg());
+        }
+        $flightArray = is_array($flights) ? $flights : [];
+        $flightArray = array_slice($flights, 0, 60);
 
-        foreach ($flights as &$flight) {
+        // Calculate and add total price per flight
+        foreach ($flightArray as &$flight) {
             $pricePerPerson = (float) ($flight['fltSellpricepp'] ?? 0);
-            $totalPrice = $pricePerPerson * ($adults + $children);
+
+            // Ensure adults and children have default values if not provided
+            $adultsCount = isset($adults) ? (int) $adults : 1;
+            $childrenCount = isset($children) ? (int) $children : 0;
+
+            // Calculate total price based on available data
+            $totalPrice = $pricePerPerson * ($adultsCount + $childrenCount);
+
+            // Add total price and counts to each flight
             $flight['totalPrice'] = $totalPrice;
-            $flight['adults'] = $adults;
-            $flight['children'] = $children;
+            $flight['adults'] = $adultsCount;
+            $flight['children'] = $childrenCount;
         }
 
-        return response()->json(['flights' => $flights]);
+
+        // Apply sorting
+        $sortOption = $request->input('sort', '');
+        if ($sortOption) {
+            usort($flightArray, function ($a, $b) use ($sortOption) {
+                $priceA = $a['totalPrice'] ?? 0;
+                $priceB = $b['totalPrice'] ?? 0;
+
+                switch ($sortOption) {
+                    case 'price_asc':
+                        return $priceA <=> $priceB;
+                    case 'price_desc':
+                        return $priceB <=> $priceA;
+                    default:
+                        return 0;
+                }
+            });
+        }
+
+        // Apply budget filter
+        $priceRanges = [
+            'under_100' => [0, 100],
+            '100_500' => [100, 500],
+            '500_1000' => [500, 1000],
+            '1000_2000' => [1000, 2000],
+            'over_2000' => [2000, PHP_INT_MAX],
+        ];
+
+        $budgetFilter = $request->input('budget');
+        if (isset($priceRanges[$budgetFilter])) {
+            [$minPrice, $maxPrice] = $priceRanges[$budgetFilter];
+            $flightArray = array_filter($flightArray, function ($package) use ($minPrice, $maxPrice) {
+                $totalPrice = $package['totalPrice'] ?? 0;
+                return $totalPrice >= $minPrice && $totalPrice <= $maxPrice;
+            });
+        }
+
+        // Apply departure date filtering
+        if ($request->input('departure_date')) {
+            $departureDate = $request->input('departure_date');
+            if ($departureDate) {
+                $depdate = \Carbon\Carbon::createFromFormat('Y-m-d', $departureDate)->format('d/m/Y');
+            } else {
+                $depdate = date('d/m/Y');
+            }
+
+            $queryParams = [
+                'agtid' => '144',
+                'page' => 'FLTSEARCH',
+                'platform' => 'WEB',
+                'depart' => $request->input('origin', 'LGW'),
+                'arrive' => $request->input('destination', 'PFO'),
+                'depdate' => $depdate,
+                'flex' => '',
+                'duration' => $duration,
+                'output' => 'JSON',
+            ];
+
+            $queryString = http_build_query($queryParams);
+            $rawData = file_get_contents("{$apiUrl}?{$queryString}");
+            $trimmedData = trim($rawData);
+            $response = mb_convert_encoding($trimmedData, 'UTF-8', 'UTF-8');
+            $flights = json_decode($response, true)['Offers'] ?? [];
+            if (json_last_error() !== JSON_ERROR_NONE) {
+                throw new \Exception('JSON Decode Error: ' . json_last_error_msg());
+            }
+            $flightArray = is_array($flights) ? $flights : [];
+        }
+
+        return response()->json([
+            'message' => 'success',
+            'data' => [
+                'flights' => $flightArray,
+                'queryParams' => request()->query() ?: null,
+            ],
+            'statusCode' => 200
+        ]);
     }
 
     public function bookingDetails(Request $request)

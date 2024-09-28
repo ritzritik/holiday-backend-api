@@ -57,11 +57,11 @@ Route::post('/package/details-verify', [PackagesController::class, 'saveCardDeta
 
 // Route::get('/flights', [FlightsController::class, 'index'])->name('flight.index');
 
-Route::post('/flights/search', [FlightsController::class, 'flightSearch'])->name('flight.search');
+Route::get('/flights/search', [FlightsController::class, 'flightSearch'])->name('flight.search');
 
 Route::post('/flights/booking', [FlightsController::class, 'bookingDetails'])->name('flight.booking-details');
 
-Route::post('/flights/alternate/search', [FlightsController::class, 'alternateFlights'])->name('flight.alternate');
+Route::get('/flights/alternate/search', [FlightsController::class, 'alternateFlights'])->name('flight.alternate');
 
 Route::post('/flights/payment/checkout', [FlightsController::class, 'flightPayment'])->name('flight.payment');
 

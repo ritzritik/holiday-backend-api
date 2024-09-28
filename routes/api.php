@@ -17,6 +17,10 @@ Route::post('/login', [AuthController::class, 'login']);
 Route::middleware('auth:api')->group(function () {
     Route::post('/logout', [AuthController::class, 'logout']);
     Route::get('/me', [AuthController::class, 'me']);
+    Route::get('/all-bookings', [AuthController::class, 'all_bookings']);
+    Route::post('/contact/admin', [AuthController::class, 'contact_admin']);
+    Route::post('/profile/update', [AuthController::class, 'profile_update']);
+    Route::post('/profile/delete', [AuthController::class, 'profile_delete']);
 });
 
 
@@ -57,11 +61,11 @@ Route::post('/package/details-verify', [PackagesController::class, 'saveCardDeta
 
 // Route::get('/flights', [FlightsController::class, 'index'])->name('flight.index');
 
-Route::post('/flights/search', [FlightsController::class, 'flightSearch'])->name('flight.search');
+Route::get('/flights/search', [FlightsController::class, 'flightSearch'])->name('flight.search');
 
 Route::post('/flights/booking', [FlightsController::class, 'bookingDetails'])->name('flight.booking-details');
 
-Route::post('/flights/alternate/search', [FlightsController::class, 'alternateFlights'])->name('flight.alternate');
+Route::get('/flights/alternate/search', [FlightsController::class, 'alternateFlights'])->name('flight.alternate');
 
 Route::post('/flights/payment/checkout', [FlightsController::class, 'flightPayment'])->name('flight.payment');
 

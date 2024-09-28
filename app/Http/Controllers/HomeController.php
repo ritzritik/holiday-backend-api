@@ -236,7 +236,6 @@ class HomeController extends Controller
         }
     
         return response()->json([
-            'data' => [],
             'message' => 'Invalid request method.',
             'statusCode' => 400
         ]);

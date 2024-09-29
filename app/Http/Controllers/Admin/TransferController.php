@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Airport;
 use App\Models\AirportPricing;
 use App\Models\Country;
+use App\Models\InsurancePlan;
 use App\Models\NewsLetter;
 use App\Models\Region;
 use App\Models\TransferPricing;
@@ -127,9 +128,58 @@ class TransferController extends Controller
 
     public function insurance()
     {
-        return view('admin.transfer.insurance');
+        $insurancePlans = InsurancePlan::all();
+        return view('admin.transfer.insurance', compact('insurancePlans'));
     }
 
+    public function createInsurance()
+    {
+        return view('admin.transfer.insurance.create'); // Make sure this path is correct
+    }
+
+    public function storeInsurance(Request $request)
+    {
+        $request->validate([
+            'plan_name' => 'required|string|max:255',
+            'premium_amount' => 'required|numeric',
+            'coverage_details' => 'required|string',
+            'active' => 'required|boolean', // Make sure this field is validated
+            'expiry_date' => 'required|date',
+            'duration' => 'required|integer|min:1', // Ensure duration is also validated
+        ]);
+
+        InsurancePlan::create($request->all());
+
+        return redirect()->route('admin.insurance')->with('success', 'Insurance plan created successfully.');
+    }
+
+    public function editInsurance($id)
+    {
+        $insurancePlan = InsurancePlan::findOrFail($id); // Fetch the insurance plan by ID
+        return view('admin.transfer.insurance.edit', compact('insurancePlan')); // Pass it to the view
+    }
+
+    public function updateInsurance(Request $request, $id)
+    {
+        $request->validate([
+            'plan_name' => 'required|string|max:255',
+            'premium_amount' => 'required|numeric',
+            'coverage_details' => 'required|string',
+            'active' => 'boolean',
+            'expiry_date' => 'required|date',
+        ]);
+
+        $insurancePlan = InsurancePlan::findOrFail($id); // Fetch the insurance plan by ID
+        $insurancePlan->update($request->all()); // Update the plan with validated data
+
+        return redirect()->route('admin.insurance')->with('success', 'Insurance plan updated successfully.');
+    }
+
+    public function destroy($id)
+    {
+        InsurancePlan::findOrFail($id)->delete();
+        return redirect()->route('admin.insurance')->with('success', 'Insurance plan deleted successfully.');
+    }
     public function luggage()
     {
         return view('admin.transfer.luggage');

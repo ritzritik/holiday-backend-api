@@ -2,133 +2,147 @@
 
 @section('title', 'Manage Parking Prices')
 
+@section('custom_style')
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/5.3.0/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://cdn.datatables.net/2.0.1/css/dataTables.bootstrap5.css">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/select2/4.1.0/css/select2.min.css" rel="stylesheet" />
+@endsection
+
 @section('content')
 
-<div class="container">
-    <h1>Manage Parking Prices</h1>
+    <div class="d-sm-flex align-items-center justify-content-between mb-4">
+        <h1 class="h3 mb-0 text-gray-800">Manage Parking Prices</h1>
+    </div>
 
-    <!-- Form to Set or Update Prices -->
-    <form id="priceForm" method="POST" action="{{ route('admin.setPricing') }}">
-        @csrf
-
-        <div class="row">
-            <!-- Airport Search/Selection (Column 1) -->
-            <div class="col-md-4">
-                <div class="form-group">
-                    <label for="airport">Search/Select Airport</label>
-                    <select id="airport" class="form-control" name="airport_id">
-                        <option value="">Select an Airport</option>
-                        @foreach($airports as $airport)
-                            <option value="{{ $airport->id }}">{{ $airport->name }} ({{ $airport->code }})</option>
-                        @endforeach
-                    </select>
-                </div>
-            </div>
-
-            <!-- Private Parking Price (Column 2) -->
-            <div class="col-md-4">
-                <div class="form-group">
-                    <label for="private_parking_price">Private Parking Price</label>
-                    <input type="number" step="0.01" class="form-control" id="private_parking_price" name="private_parking_price" placeholder="Enter price for private parking">
-                </div>
-            </div>
-
-            <!-- Standard Parking Price (Column 3) -->
-            <div class="col-md-4">
-                <div class="form-group">
-                    <label for="standard_parking_price">Standard Parking Price</label>
-                    <input type="number" step="0.01" class="form-control" id="standard_parking_price" name="standard_parking_price" placeholder="Enter price for standard parking">
-                </div>
+    <div class="container">
+        <div class="row" style="transition: opacity 2s ease-in-out;">
+            <div class="col-md-12" style="transition: opacity 2s ease-in-out;">
+                @if (session('error'))
+                    <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                        {{ session('error') }}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                    </div>
+                @endif
+                @if (session('success'))
+                    <div class="alert alert-success alert-dismissible fade show" role="alert">
+                        {{ session('success') }}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                    </div>
+                @endif
             </div>
         </div>
 
-        <button type="submit" class="btn btn-primary mt-3">Save Prices</button>
-    </form>
+        <div class="row">
+            <div class="col-md-12">
+                <div class="p-3 card shadow rounded">
+                    <form id="priceForm" method="POST" action="{{ route('admin.setPricing') }}">
+                        @csrf
+                        <div class="row mb-3">
+                            <div class="col-md-4">
+                                <div class="form-group">
+                                    <label for="airport">Search/Select Airport</label>
+                                    <select id="airport" class="form-control" name="airport_id">
+                                        <option value="">Select an Airport</option>
+                                        @foreach($airports as $airport)
+                                            <option value="{{ $airport->id }}">{{ $airport->name }} ({{ $airport->code }})</option>
+                                        @endforeach
+                                    </select>
+                                </div>
+                            </div>
 
-    <!-- Search Box for Filtering Data -->
-    <div class="mt-4">
-        <input type="text" id="searchInput" class="form-control" placeholder="Search saved records (by airport name)">
+                            <div class="col-md-4">
+                                <div class="form-group">
+                                    <label for="private_parking_price">Private Parking Price</label>
+                                    <input type="number" step="0.01" class="form-control" id="private_parking_price" name="private_parking_price" placeholder="Enter price for private parking">
+                                </div>
+                            </div>
+
+                            <div class="col-md-4">
+                                <div class="form-group">
+                                    <label for="standard_parking_price">Standard Parking Price</label>
+                                    <input type="number" step="0.01" class="form-control" id="standard_parking_price" name="standard_parking_price" placeholder="Enter price for standard parking">
+                                </div>
+                            </div>
+                        </div>
+
+                        <button type="submit" class="btn btn-primary mt-3">Save Prices</button>
+                    </form>
+
+                    <!-- Table for Displaying Saved Data -->
+                    <div class="table-responsive mt-4">
+                        <table id="parkingDataTable" class="table table-striped" style="width:100%">
+                            <thead>
+                                <tr>
+                                    <th>Airport Name</th>
+                                    <th>Private Parking Price</th>
+                                    <th>Standard Parking Price</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach($pricingData as $pricing)
+                                <tr>
+                                    <td>{{ $pricing->airport->name }} ({{ $pricing->airport->code }})</td>
+                                    <td>{{ $pricing->private_parking_price }}</td>
+                                    <td>{{ $pricing->standard_parking_price }}</td>
+                                </tr>
+                                @endforeach
+                            </tbody>
+                        </table>
+                        {{ $pricingData->links() }} <!-- Laravel Pagination -->
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
 
-    <!-- Table for Displaying Saved Data -->
-    <div class="table-responsive mt-4">
-        <table class="table table-bordered" id="parkingDataTable">
-            <thead>
-                <tr>
-                    <th>Airport Name</th>
-                    <th>Private Parking Price</th>
-                    <th>Standard Parking Price</th>
-                </tr>
-            </thead>
-            <tbody>
-                @foreach($pricingData as $pricing)
-                <tr>
-                    <td>{{ $pricing->airport->name }} ({{ $pricing->airport->code }})</td>
-                    <td>{{ $pricing->private_parking_price }}</td>
-                    <td>{{ $pricing->standard_parking_price }}</td>
-                </tr>
-                @endforeach
-            </tbody>
-        </table>
-        {{ $pricingData->links() }} <!-- Laravel Pagination -->
-    </div>
-</div>
+@endsection
 
-<!-- jQuery -->
-<script src="https://cdn.jsdelivr.net/npm/jquery@3.6.0/dist/jquery.min.js"></script>
-<!-- Select2 -->
-<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
-<link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+@section('custom_script')
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script> <!-- Use a stable version -->
+    <script src="https://cdn.datatables.net/1.13.1/js/jquery.dataTables.min.js"></script>
+    <script src="https://cdn.datatables.net/1.13.1/js/dataTables.bootstrap5.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/5.3.0/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/select2/4.1.0/js/select2.min.js"></script> <!-- Include Select2 JS -->
 
-<script>
-    $(document).ready(function() {
-        console.log('Document is ready');
+    <script>
+        $(document).ready(function() {
+            // Initialize DataTable
+            var table = $('#parkingDataTable').DataTable();
 
-        // Initialize Select2 for the airport dropdown
-        $('#airport').select2();
+            // Initialize Select2 for the airport dropdown
+            $('#airport').select2();
 
-        // When an airport is selected, fetch pricing info via AJAX
-        $('#airport').on('change', function() {
-            let airportId = $(this).val();
-            if (airportId) {
-                // Fetch existing prices via AJAX
-                $.ajax({
-                    url: '/admin/getPricing/' + airportId,
-                    type: 'GET',
-                    success: function(response) {
-                        if (response.exists) {
-                            $('#private_parking_price').val(response.private_parking_price);
-                            $('#standard_parking_price').val(response.standard_parking_price);
-                        } else {
-                            // Clear the fields if no prices exist
-                            $('#private_parking_price').val('');
-                            $('#standard_parking_price').val('');
+            // Search functionality
+            $('#searchInput').on('keyup', function() {
+                table.search(this.value).draw();
+            });
+
+            // Fetch existing prices on airport selection
+            $('#airport').on('change', function() {
+                let airportId = $(this).val();
+                if (airportId) {
+                    $.ajax({
+                        url: '/admin/getPricing/' + airportId,
+                        type: 'GET',
+                        success: function(response) {
+                            if (response.exists) {
+                                $('#private_parking_price').val(response.private_parking_price);
+                                $('#standard_parking_price').val(response.standard_parking_price);
+                            } else {
+                                $('#private_parking_price').val('');
+                                $('#standard_parking_price').val('');
+                            }
+                        },
+                        error: function(xhr, status, error) {
+                            console.error('AJAX Error:', status, error);
+                            alert('Error fetching data. Please try again.');
                         }
-                    },
-                    error: function() {
-                        alert('Error fetching data. Please try again.');
-                    }
-                });
-            } else {
-                // Clear the price fields if no airport is selected
-                $('#private_parking_price').val('');
-                $('#standard_parking_price').val('');
-            }
-        });
-
-        // JavaScript Search Algorithm for Saved Data
-        $('#searchInput').on('keyup', function() {
-            console.log('Search input changed'); // Debugging statement
-            let value = $(this).val().toLowerCase();
-            console.log('Search value:', value); // Debugging statement
-            $('#parkingDataTable tbody tr').each(function() {
-                let rowText = $(this).text().toLowerCase();
-                console.log('Row text:', rowText); // Debugging statement
-                $(this).toggle(rowText.indexOf(value) > -1);
+                    });
+                } else {
+                    $('#private_parking_price').val('');
+                    $('#standard_parking_price').val('');
+                }
             });
         });
-    });
-</script>
-
-
+    </script>
 @endsection

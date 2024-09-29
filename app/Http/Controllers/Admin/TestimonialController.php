@@ -99,6 +99,25 @@ class TestimonialController extends Controller
         return redirect()->route('admin.testimonial.publish')->with('success', 'Testimonial updated successfully.');
     }
 
+    public function destroy(Testimonial $testimonial)
+    {
+        // Check if the testimonial exists
+        if (!$testimonial) {
+            return redirect()->route('admin.testimonial.publish')->with('error', 'Testimonial not found.');
+        }
+
+        // Optionally, delete the associated image if it exists
+        if ($testimonial->image) {
+            \Storage::disk('public')->delete($testimonial->image);
+        }
+
+        // Delete the testimonial
+        $testimonial->delete();
+
+        // Redirect back to the testimonials list with a success message
+        return redirect()->route('admin.testimonial.publish')->with('success', 'Testimonial deleted successfully.');
+    }
+
     public function changeStatus($id, $status)
     {
         // Validate the status input (must be 'draft' or 'published')
@@ -129,7 +148,8 @@ class TestimonialController extends Controller
         return response()->json($testimonials);
     }
 
-    public function fetchPublished() {
+    public function fetchPublished()
+    {
         $testimonials = Testimonial::where('status', 'published')->get();
         return response()->json($testimonials);
     }

@@ -11,7 +11,7 @@ class AirportPricing extends Model
 
     protected $table = 'airport_pricing';
 
-    protected $fillable = ['airport_id', 'transfer_price', 'parking_price'];
+    protected $fillable = ['airport_id', 'private_parking_price', 'standard_parking_price'];
 
     public function airport()
     {

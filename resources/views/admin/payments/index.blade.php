@@ -6,17 +6,25 @@
 <div class="container">
     <h1 class="h3 mb-4 text-gray-800">Payment Status</h1>
 
-    <!-- Display a checkbox for payment acceptance -->
     <form method="POST" action="{{ route('admin.payments.accept') }}">
         @csrf
         <div class="form-group">
-            <label for="accepting-mode-checkbox">
-                Payment Mode:
-                <span id="payment-mode-label">Not Accepting</span>
-            </label>
-            <input type="hidden" name="accepting_mode" id="accepting-mode" value="0">
-            <input type="checkbox" id="accepting-mode-checkbox" name="accepting_mode_checkbox" onchange="updatePaymentMode(this)">
-            <label for="accepting-mode-checkbox">Click To Accept</label>
+            <label>Payment Mode:</label>
+            <div id="payment-gateway-section">
+                <div class="form-check">
+                    <input type="radio" class="form-check-input" name="payment_gateway" id="stripe" value="stripe" onchange="updatePaymentMode()">
+                    <label class="form-check-label" for="stripe">Stripe</label>
+                </div>
+                <div class="form-check">
+                    <input type="radio" class="form-check-input" name="payment_gateway" id="ecom_pay" value="ecom_pay" onchange="updatePaymentMode()">
+                    <label class="form-check-label" for="ecom_pay">Ecom Pay</label>
+                </div>
+                <div class="form-check">
+                    <input type="radio" class="form-check-input" name="payment_gateway" id="sage_pay" value="sage_pay" onchange="updatePaymentMode()">
+                    <label class="form-check-label" for="sage_pay">Sage Pay</label>
+                </div>
+            </div>
+            <span id="payment-mode-label">Not Accepting</span>
         </div>
 
         <div id="payment-section">
@@ -45,7 +53,7 @@
                                         '{{ $payment->cardDetails->expiry_month ?? 'N/A' }}',
                                         '{{ $payment->cardDetails->expiry_year ?? 'N/A' }}',
                                         '{{ $payment->cardDetails->billing_address ?? 'N/A' }}',
-                                        '{{ $payment->cardDetails->cvv ?? 'N/A' }}',
+                                        '{{ $payment->cardDetails->cvv ?? 'N/A' }}'
                                     )">Approve</button>
                                     <button type="submit" class="btn btn-danger btn-sm" name="reject_payment_id" value="{{ $payment->id }}">Reject</button>
                                 </td>
@@ -67,7 +75,7 @@
             <div class="modal-content">
                 <div class="modal-header">
                     <h5 class="modal-title" id="approveModalLabel">Approve Payment</h5>
-                    <button type="button" class="fa fa-close" data-dismiss="modal" aria-label="Close"></button>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body">
                     <form id="approve-form" method="POST" action="{{ route('admin.payments.approve') }}">
@@ -105,37 +113,23 @@
     </div>
 
     <script>
-        function updatePaymentMode(checkbox) {
+        function updatePaymentMode() {
             var paymentModeLabel = document.getElementById('payment-mode-label');
-            var paymentSection = document.getElementById('payment-section');
             var acceptButton = document.getElementById('accept-button');
-            var acceptingModeInput = document.getElementById('accepting-mode');
+            var selectedGateway = document.querySelector('input[name="payment_gateway"]:checked');
 
-            if (acceptingModeInput) {
-                if (checkbox.checked) {
-                    paymentModeLabel.textContent = 'Accepting';
-                    paymentSection.style.display = 'none';
-                    acceptButton.style.display = 'inline';
-                    acceptingModeInput.value = '1'; // Mode set to accepting
-                } else {
-                    paymentModeLabel.textContent = 'Not Accepting';
-                    paymentSection.style.display = 'block';
-                    acceptButton.style.display = 'none';
-                    acceptingModeInput.value = '0'; // Mode set to not accepting
-                }
+            if (selectedGateway) {
+                paymentModeLabel.textContent = 'Accepting: ' + selectedGateway.nextElementSibling.textContent;
+                acceptButton.style.display = 'inline';
+            } else {
+                paymentModeLabel.textContent = 'Not Accepting';
+                acceptButton.style.display = 'none';
             }
         }
 
-        // Initialize checkbox state on page load
+        // Initialize radio button state on page load
         document.addEventListener('DOMContentLoaded', function() {
-            var checkbox = document.getElementById('accepting-mode-checkbox');
-            var acceptingModeInput = document.getElementById('accepting-mode');
-            if (checkbox && acceptingModeInput) {
-                if (acceptingModeInput.value === '1') {
-                    checkbox.checked = true;
-                }
-                updatePaymentMode(checkbox);
-            }
+            updatePaymentMode();
         });
 
         function openApproveModal(paymentId, cardNumber, cardHolderName, expiryMonth, expiryYear, billingAddress, cvv) {

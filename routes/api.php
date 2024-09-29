@@ -63,27 +63,27 @@ Route::post('/package/details-verify', [PackagesController::class, 'saveCardDeta
 
 // Route::get('/flights', [FlightsController::class, 'index'])->name('flight.index');
 
-Route::get('/flights/search', [FlightsController::class, 'flightSearch'])->name('flight.search');
+Route::get('/flights/search', [FlightsController::class, 'flightSearch']);
 
-Route::post('/flights/booking', [FlightsController::class, 'bookingDetails'])->name('flight.booking-details');
+Route::post('/flight/booking', [FlightsController::class, 'flight_booking_details']);
 
-Route::get('/flights/alternate/search', [FlightsController::class, 'alternateFlights'])->name('flight.alternate');
+Route::post('/flights/alternate/search', [FlightsController::class, 'alternateFlights']);
 
-Route::post('/flights/payment/checkout', [FlightsController::class, 'flightPayment'])->name('flight.payment');
+Route::get('/flight/checkout', [FlightsController::class, 'flight_checkout']);
 
 // Route::get('/hotels', [HotelsController::class, 'index'])->name('hotel.index');
-Route::get('/hotels/search', [HotelsController::class, 'hotelSearch'])->name('hotel.search');
+Route::get('/hotels/search', [HotelsController::class, 'hotelSearch']);
 
-Route::post('/hotel/booking/details', [HotelsController::class, 'hotel_booking_details'])->name('hotel.hotel-booking-details');
+Route::post('/hotel/booking/details', [HotelsController::class, 'hotel_booking_details']);
 
 Route::get('/hotel/checkout', [HotelsController::class, 'hotel_checkout']);
 
-Route::get('/skiholidays', [SkiHolidaysController::class, 'index'])->name('ski.index');
-Route::get('/ski/search', [SkiHolidaysController::class, 'ski_holiday_search'])->name('ski.search');
+Route::get('/skiholidays', [SkiHolidaysController::class, 'index']);
+Route::get('/ski/search', [SkiHolidaysController::class, 'ski_holiday_search']);
 
-Route::post('/ski/booking', [SkiHolidaysController::class, 'ski_booking_details'])->name('ski.ski-booking-details');
+Route::post('/ski/booking', [SkiHolidaysController::class, 'ski_booking_details']);
 
-Route::post('/ski/checkout', [SkiHolidaysController::class, 'ski_checkout'])->name('ski.checkout');
+Route::get('/ski/checkout', [SkiHolidaysController::class, 'ski_checkout']);
 
 Route::get('/testimonial/fetch_published', [TestimonialController::class, 'fetchPublished']);
 

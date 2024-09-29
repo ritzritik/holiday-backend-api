@@ -39,6 +39,8 @@ Route::get('/home', [HomeController::class, 'index']);
 // Route for subscribing to the newsletter
 Route::post('/subscribe', [HomeController::class, 'subscribe']);
 
+Route::post('/send/deal', [HomeController::class, 'send_deal']);
+
 // Route for fetching all packages with optional filtering
 Route::get('/packages', [PackagesController::class, 'index']);
 

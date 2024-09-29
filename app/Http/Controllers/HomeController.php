@@ -18,6 +18,7 @@ use App\Models\Hotel;
 use App\Models\NewsLetter;
 use App\Models\Resort;
 use Illuminate\Support\Facades\Cache;
+use App\Models\Deal;
 
 
 class HomeController extends Controller
@@ -239,6 +240,25 @@ class HomeController extends Controller
             'message' => 'Invalid request method.',
             'statusCode' => 400
         ]);
+    }
+
+    public function send_deal(Request $request)
+    {
+        $validatedData = $request->validate([
+            'title' => 'required|string|max:255',
+            'email' => 'required|email',
+            'deal' => 'required|string',
+        ]);
+
+        $deal = Deal::create([
+            'title' => $validatedData['title'],
+            'email' => $validatedData['email'],
+            'deal' => $validatedData['deal'],
+        ]);
+
+        return response()->json([
+            'message' => 'Deal sent successfully!',
+        ], 201);
     }
     
 }

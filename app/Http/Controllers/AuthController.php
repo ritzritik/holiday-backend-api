@@ -99,7 +99,7 @@ class AuthController extends Controller
     private function getProfilePhotoUrl($profilePhoto)
     {
         if ($profilePhoto) {
-            return url('uploads/profile_photos/' . $profilePhoto); 
+            return url('public/uploads/profile_photos/' . $profilePhoto); 
         }
         return null;
     }

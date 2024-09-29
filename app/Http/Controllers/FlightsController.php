@@ -174,7 +174,7 @@ class FlightsController extends Controller
             'page' => 'FLTSEARCH',
             'platform' => 'WEB',
             'depart' => $origin,
-            'arrive' => $destination,
+            'arrive' => 'BFS',
             'depdate' => $depdate,
             'duration' => $duration,
             'flex' => $flex,

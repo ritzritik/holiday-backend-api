@@ -9,11 +9,13 @@ use App\Models\Country;
 use App\Models\NewsLetter;
 use App\Models\Region;
 use App\Models\TransferPricing;
-use Cache;
+// use Cache;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Mail;
+use Illuminate\Contracts\Mail\Mailable;
 
-class Transfercontroller extends Controller
+class TransferController extends Controller
 {
     public function index()
     {
@@ -174,7 +176,7 @@ class Transfercontroller extends Controller
         ]);
 
         // Send email logic here, using Laravel's Mail facade or any other email service
-        Mail::to($validatedData['email'])->send(new CustomEmail($validatedData['subject'], $validatedData['message']));
+        // Mail::to($validatedData['email'])->send(new CustomEmail($validatedData['subject'], $validatedData['message']));
 
         return response()->json(['success' => 'Email sent successfully!']);
     }

@@ -1,5 +1,7 @@
 <?php
 
+use App\Http\Controllers\Admin\TestimonialController;
+use App\Http\Controllers\Admin\TransferController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\HomeController;
@@ -82,4 +84,8 @@ Route::get('/ski/search', [SkiHolidaysController::class, 'ski_holiday_search'])-
 Route::post('/ski/booking', [SkiHolidaysController::class, 'ski_booking_details'])->name('ski.ski-booking-details');
 
 Route::post('/ski/checkout', [SkiHolidaysController::class, 'ski_checkout'])->name('ski.checkout');
+
+Route::get('/testimonial/fetch_published', [TestimonialController::class, 'fetchPublished']);
+
+Route::get('/getPricing/{airportId}', [TransferController::class, 'getPricing']);
 

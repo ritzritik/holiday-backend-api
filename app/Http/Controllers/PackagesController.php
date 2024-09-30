@@ -335,10 +335,17 @@ class PackagesController extends Controller
     
         // $packagesArray = Cache::remember($cacheKey, 60 * 60 * 12, function () use ($apiUrl, $queryString) {
         $response = file_get_contents("{$apiUrl}?{$queryString}");
+
+        $trimmedData = trim($response);
+        $response = mb_convert_encoding($trimmedData, 'UTF-8', 'UTF-8');
         $packagesArray = json_decode($response, true)['Offers'] ?? [];
+        if (json_last_error() !== JSON_ERROR_NONE) {
+            throw new \Exception('JSON Decode Error: ' . json_last_error_msg());
+        }
+        // $packagesArray = json_decode($response, true)['Offers'] ?? [];
         //     return is_array($packages) ? $packages : [];
         // });
-    
+
         $sortOption = $request->input('sort', ''); // Default to an empty string if not set
         // Apply sorting if requested
         if ($sortOption) {

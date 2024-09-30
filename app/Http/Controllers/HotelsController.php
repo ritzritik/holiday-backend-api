@@ -126,10 +126,10 @@ class HotelsController extends Controller
 
     public function hotel_booking_details(Request $request)
     {
-        $hotels = $request['hotel'];
+        $hotel = $request['hotel'];
         $apiUrl = 'http://87.102.127.86:8119/search/searchoffers.dll';
 
-        $queryParams = [
+        $pricesParams = [
             'agtid' => '144',
             'page' => 'CALSEARCH',
             'platform' => 'WEB',
@@ -139,18 +139,19 @@ class HotelsController extends Controller
             'children' => 0,
             'duration' => 7,
             'output' => 'JSON',
-            'hotelid' => $hotels['kwikid'],
+            'hotelid' => $hotel['kwikid'],
         ];
 
-        $queryString = http_build_query($queryParams);
-        $response = file_get_contents("{$apiUrl}?{$queryString}");
-        $calendarPricesArray = json_decode($response, true)['Offers'] ?? [];
+        $querypricesString = http_build_query($pricesParams);
 
+        $pricesResponse = file_get_contents("{$apiUrl}?{$querypricesString}");
+        $calendarPricesArray = json_decode($pricesResponse, true)['Offers'] ?? [];
+        
         // Booking info
         $queryParams = [
             'agtid' => '144',
             'page' => 'BROCHURE',
-            'brochurecode' => $hotels['brochurecode'],
+            'brochurecode' => $hotel['brochurecode'],
             'output' => 'JSON',
         ];
 
@@ -161,7 +162,7 @@ class HotelsController extends Controller
         return response()->json([
             'message' => 'success',
             'data' => [
-                'selected_hotel' => $hotels,
+                'selected_hotel' => $hotel,
                 'calendarPrices' => $calendarPricesArray,
                 'hotelInfo' => $hotelInfoArray,
             ],

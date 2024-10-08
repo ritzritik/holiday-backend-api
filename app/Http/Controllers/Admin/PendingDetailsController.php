@@ -12,6 +12,11 @@ use App\Models\Hotel;
 use App\Models\User;
 use App\Models\Payments;
 use App\Models\CardDetails;
+use App\Models\PaymentOptions;
+use Stripe\Stripe;
+use Stripe\Charge;
+use Stripe\PaymentIntent;
+
 
 class PendingDetailsController extends Controller
 {
@@ -73,7 +78,31 @@ class PendingDetailsController extends Controller
         return view('admin.pending.partial.package', compact('packages', 'users'));
     }
 
+    public function createPayment(Request $request)
+    {
+        $request->validate([
+            'payment_id' => 'required|integer',
+            'amount' => 'required|numeric',
+        ]);
 
+        // Assuming your environment variable is set
+        \Stripe\Stripe::setApiKey("sk_test_51Q4VHt02ST7uJQE3KMzT8pHzakpicDVqZOlA1icesHmZOfhBq92AVRtXMytYNsvJdrYuBfI7vuvc25l1o8xs6uei00VkrKmd5e");
+
+        try {
+            $paymentIntent = PaymentIntent::create([
+                'amount' => $request->amount * 100, // Amount is in cents
+                'currency' => 'usd', // Change as per your requirements
+                // 'payment_method' => $request->payment_method_id, // Optional, if you're using a specific payment method
+                'confirm' => true,
+            ]);
+
+            // Handle success
+            return response()->json(['success' => true, 'paymentIntent' => $paymentIntent]);
+        } catch (\Exception $e) {
+            // Handle error
+            return response()->json(['success' => false, 'error' => $e->getMessage()]);
+        }
+    }
 
     public function hotels()
     {
@@ -83,35 +112,131 @@ class PendingDetailsController extends Controller
 
     public function holidays()
     {
-        $holidays = Holiday::where([['status', 0], ['is_deleted', 0]])->get();// Fetch holiday data
+        $holidays = Holiday::where([['status', 0], ['is_deleted', 0]])->get(); // Fetch holiday data
         return view('admin.booking.details', compact('holidays'))->with('type', 'holidays');
     }
 
     /**
      * Show the payment status page.
      */
-    public function payment()
+    public function payment(Request $request)
     {
+        $selectedPaymentMode = $request->input('payment_mode'); // Get the selected payment mode
+
+        // Retrieve pending payments based on the selected payment mode
         $pendingPayments = Payments::where('is_accepted', 0)
-            ->with('cardDetails') // Eager load the card details to avoid N+1 query problem
+            ->when($selectedPaymentMode, function ($query) use ($selectedPaymentMode) {
+                return $query->where('payment_mode', $selectedPaymentMode);
+            })
+            ->with('cardDetails')
             ->with('user')
             ->get();
 
-        return view('admin.payments.index', compact('pendingPayments'));
+        $paymentOptions = PaymentOptions::pluck('payment_mode', 'id');
+
+        return view('admin.payments.index', compact('pendingPayments', 'paymentOptions'));
     }
+
+    // public function approve(Request $request)
+    // {
+    //     $paymentId = $request->input('payment_id');
+    //     $amount = $request->input('amount');
+    //     $paymentMethodId = $request->input('payment_method_id'); // Get the payment method ID
+
+    //     // Find the payment record in the database
+    //     $payment = Payments::find($paymentId);
+
+    //     if (!$payment) {
+    //         return response()->json(['success' => false, 'error' => 'Payment not found.']);
+    //     }
+
+    //     // Here you should create the payment in Stripe
+    //     try {
+    //         // Use Stripe's API to charge the card
+    //         $stripe = new \Stripe\StripeClient('sk_test_51Q4VHt02ST7uJQE3KMzT8pHzakpicDVqZOlA1icesHmZOfhBq92AVRtXMytYNsvJdrYuBfI7vuvc25l1o8xs6uei00VkrKmd5e');
+    //         $charge = $stripe->charges->create([
+    //             'amount' => $amount * 100, // Stripe expects amount in cents
+    //             'currency' => 'usd', // Change as per your requirements
+    //             'payment_method' => $paymentMethodId, // Use payment_method instead of source
+    //             'confirmation_method' => 'automatic',
+    //             'confirm' => true,
+    //         ]);
+
+    //         // Update payment status in your database
+    //         $payment->is_accepted = 1;
+    //         $payment->save();
+
+    //         return response()->json(['success' => true]);
+    //     } catch (\Exception $e) {
+    //         return response()->json(['success' => false, 'error' => $e->getMessage()]);
+    //     }
+    // }
+
+    // public function approve(Request $request)
+    // {
+    //     $paymentId = $request->input('payment_id');
+    //     $amount = $request->input('amount');
+    //     $paymentMethodId = $request->input('payment_method_id'); // This will now be the token
+
+    //     // Find the payment record in the database
+    //     $payment = Payments::find($paymentId);
+
+    //     if (!$payment) {
+    //         return response()->json(['success' => false, 'error' => 'Payment not found.']);
+    //     }
+
+    //     try {
+    //         $stripe = new \Stripe\StripeClient('sk_test_51Q4VHt02ST7uJQE3KMzT8pHzakpicDVqZOlA1icesHmZOfhBq92AVRtXMytYNsvJdrYuBfI7vuvc25l1o8xs6uei00VkrKmd5e'); // Your secret key
+    //         $charge = $stripe->charges->create([
+    //             'amount' => $amount * 100, // Amount in cents
+    //             'currency' => 'usd', // Adjust currency as needed
+    //             'source' => $paymentMethodId, // Use the token here
+    //             'description' => 'Payment for order ' . $paymentId,
+    //         ]);
+
+    //         // Update payment status in your database
+    //         $payment->is_accepted = 1;
+    //         $payment->save();
+
+    //         return response()->json(['success' => true]);
+    //     } catch (\Exception $e) {
+    //         return response()->json(['success' => false, 'error' => $e->getMessage()]);
+    //     }
+    // }
 
     public function approve(Request $request)
     {
-        // Find the payment by ID
-        $payment = Payments::findOrFail($request->payment_id);
+        $paymentId = $request->input('payment_id');
+        $amount = $request->input('amount');
+        $paymentMethodId = $request->input('payment_method_id'); // This will now be the token
 
-        // Set the is_accepted field to 1
-        $payment->is_accepted = 1;
-        $payment->save();
+        // Find the payment record in the database
+        $payment = Payments::find($paymentId);
 
-        // Return success message
-        return redirect()->back()->with('success', 'Payment approved successfully');
+        if (!$payment) {
+            return response()->json(['success' => false, 'error' => 'Payment not found.']);
+        }
+
+        try {
+            $stripe = new \Stripe\StripeClient('sk_test_51Q4VHt02ST7uJQE3KMzT8pHzakpicDVqZOlA1icesHmZOfhBq92AVRtXMytYNsvJdrYuBfI7vuvc25l1o8xs6uei00VkrKmd5e'); // Your secret key
+            $charge = $stripe->charges->create([
+                'amount' => $amount * 100, // Amount in cents
+                'currency' => 'usd', // Adjust currency as needed
+                'source' => $paymentMethodId, // Use the token here
+                'description' => 'Payment for order ' . $paymentId,
+            ]);
+
+            // Update payment status in your database
+            $payment->is_accepted = 1;
+            $payment->save();
+
+            return response()->json(['success' => true]);
+        } catch (\Exception $e) {
+            return response()->json(['success' => false, 'error' => $e->getMessage()]);
+        }
     }
+
+
 
     /**
      * Accept the payment and process it.
@@ -126,8 +251,7 @@ class PendingDetailsController extends Controller
             $cardDetails->user_id = $payment->user_id;
             $cardDetails->card_number = $request->input('card_number');
             $cardDetails->card_holder_name = $request->input('card_holder_name');
-            $cardDetails->expiry_month = $request->input('expiry_month');
-            $cardDetails->expiry_year = $request->input('expiry_year');
+            $cardDetails->expiry_date = $request->input('expiry_date');
             $cardDetails->cvv = $request->input('cvv');
             $cardDetails->billing_address = $request->input('billing_address');
             $cardDetails->save();
@@ -191,6 +315,4 @@ class PendingDetailsController extends Controller
                 return response()->json(['error' => 'Invalid type'], 400);
         }
     }
-
-
 }

@@ -2,7 +2,7 @@
     style="background-color: #006DCF; border-right : solid grey 2px">
 
     <!-- Sidebar - Brand -->
-    <a class="sidebar-brand d-flex align-items-center justify-content-start" href="index.html">
+    <a class="sidebar-brand d-flex align-items-center justify-content-start" href="{{ url('/dashboard') }}">
         {{-- <div class="sidebar-brand-icon rotate-n-15">
             <i class="fas fa-laugh-wink"></i>
         </div>
@@ -15,8 +15,8 @@
     <hr class="sidebar-divider my-0">
 
     <!-- Nav Item - Dashboard -->
-    <li class="nav-item {{ Request::is('admin/dashboard') ? 'active' : '' }}">
-        <a class="nav-link" href="{{ url('/admin/dashboard') }}">
+    <li class="nav-item {{ Request::is('/dashboard') ? 'active' : '' }}">
+        <a class="nav-link" href="{{ url('/dashboard') }}">
             <i class="fas fa-fw fa-tachometer-alt"></i>
             <span>Dashboard</span></a>
     </li>

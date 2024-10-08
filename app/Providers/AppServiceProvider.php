@@ -4,6 +4,7 @@ namespace App\Providers;
 
 use App\Http\Middleware\CheckAdminRole;
 use App\Http\Middleware\RedirectIfAuthenticatedAdmin;
+use App\Http\Middleware\VerifyAjaxCsrfToken;
 use Illuminate\Support\ServiceProvider;
 
 class AppServiceProvider extends ServiceProvider
@@ -15,6 +16,7 @@ class AppServiceProvider extends ServiceProvider
     {
         app('router')->aliasMiddleware('guest.admin', RedirectIfAuthenticatedAdmin::class);
         app('router')->aliasMiddleware('check.admin', CheckAdminRole::class);
+        app('router')->aliasMiddleware('verify.ajax.csrf', VerifyAjaxCsrfToken::class);
     }
 
     /**
@@ -23,5 +25,10 @@ class AppServiceProvider extends ServiceProvider
     public function boot(): void
     {
         //
+    }
+
+    public function registerMiddleware($middleware)
+    {
+        $middleware->alias('verify.ajax.csrf', \App\Http\Middleware\VerifyAjaxCsrfToken::class);
     }
 }

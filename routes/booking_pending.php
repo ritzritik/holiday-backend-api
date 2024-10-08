@@ -10,7 +10,7 @@ use Illuminate\Support\Facades\Auth;
 
 
 
-Route::prefix('admin')->group(function () {
+Route::prefix('admin')->middleware(['check.admin'])->group(function () {
     Route::get('/booked', [BookingDetailsController::class, 'index'])->name('admin.booking-details');
     Route::get('/booked/packages', [BookingDetailsController::class, 'packages'])->name('admin.booking.packages');
     Route::get('/booked/flights', [BookingDetailsController::class, 'flights'])->name('admin.booking.flights');
@@ -19,7 +19,7 @@ Route::prefix('admin')->group(function () {
 })->middleware('auth');
 
 
-Route::prefix('admin')->group(function () {
+Route::prefix('admin')->middleware(['check.admin'])->group(function () {
     Route::get('/admin/pending/{type}', [PendingDetailsController::class, 'loadPending'])->name('admin.pending.load');
     Route::get('/pending', [PendingDetailsController::class, 'index'])->name('admin.pending-details');
     Route::get('/pending/packages', [PendingDetailsController::class, 'packages'])->name('admin.pending.packages');
@@ -29,9 +29,11 @@ Route::prefix('admin')->group(function () {
 })->middleware('auth');
 
 
-Route::prefix('admin')->group(function () {
+Route::prefix('admin')->middleware(['check.admin'])->group(function () {
     Route::get('/payments', [PendingDetailsController::class, 'payment'])->name('admin.payments-details');
     Route::post('/payments/accept', [PendingDetailsController::class, 'accept'])->name('admin.payments.accept');
     Route::post('/payments/reject', [PendingDetailsController::class, 'reject'])->name('admin.payments.reject');
-    Route::post('/admin/payments/approve', [PendingDetailsController::class, 'approve'])->name('admin.payments.approve');
+    Route::post('/payments/approve', [PendingDetailsController::class, 'approve'])->middleware('verify.ajax.csrf')->name('admin.payments.approve');
 })->middleware('auth');
+
+// Route::post('/admin/payments/approve', [PendingDetailsController::class, 'approve'])->middleware('verify.ajax.csrf')->name('admin.payments.approve');

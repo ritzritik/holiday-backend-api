@@ -137,11 +137,78 @@ class PendingDetailsController extends Controller
         return view('admin.payments.index', compact('pendingPayments', 'paymentOptions'));
     }
 
+    // public function approve(Request $request)
+    // {
+    //     $paymentId = $request->input('payment_id');
+    //     $amount = $request->input('amount');
+    //     $paymentMethodId = $request->input('payment_method_id'); // Get the payment method ID
+
+    //     // Find the payment record in the database
+    //     $payment = Payments::find($paymentId);
+
+    //     if (!$payment) {
+    //         return response()->json(['success' => false, 'error' => 'Payment not found.']);
+    //     }
+
+    //     // Here you should create the payment in Stripe
+    //     try {
+    //         // Use Stripe's API to charge the card
+    //         $stripe = new \Stripe\StripeClient('sk_test_51Q4VHt02ST7uJQE3KMzT8pHzakpicDVqZOlA1icesHmZOfhBq92AVRtXMytYNsvJdrYuBfI7vuvc25l1o8xs6uei00VkrKmd5e');
+    //         $charge = $stripe->charges->create([
+    //             'amount' => $amount * 100, // Stripe expects amount in cents
+    //             'currency' => 'usd', // Change as per your requirements
+    //             'payment_method' => $paymentMethodId, // Use payment_method instead of source
+    //             'confirmation_method' => 'automatic',
+    //             'confirm' => true,
+    //         ]);
+
+    //         // Update payment status in your database
+    //         $payment->is_accepted = 1;
+    //         $payment->save();
+
+    //         return response()->json(['success' => true]);
+    //     } catch (\Exception $e) {
+    //         return response()->json(['success' => false, 'error' => $e->getMessage()]);
+    //     }
+    // }
+
+    // public function approve(Request $request)
+    // {
+    //     $paymentId = $request->input('payment_id');
+    //     $amount = $request->input('amount');
+    //     $paymentMethodId = $request->input('payment_method_id'); // This will now be the token
+
+    //     // Find the payment record in the database
+    //     $payment = Payments::find($paymentId);
+
+    //     if (!$payment) {
+    //         return response()->json(['success' => false, 'error' => 'Payment not found.']);
+    //     }
+
+    //     try {
+    //         $stripe = new \Stripe\StripeClient('sk_test_51Q4VHt02ST7uJQE3KMzT8pHzakpicDVqZOlA1icesHmZOfhBq92AVRtXMytYNsvJdrYuBfI7vuvc25l1o8xs6uei00VkrKmd5e'); // Your secret key
+    //         $charge = $stripe->charges->create([
+    //             'amount' => $amount * 100, // Amount in cents
+    //             'currency' => 'usd', // Adjust currency as needed
+    //             'source' => $paymentMethodId, // Use the token here
+    //             'description' => 'Payment for order ' . $paymentId,
+    //         ]);
+
+    //         // Update payment status in your database
+    //         $payment->is_accepted = 1;
+    //         $payment->save();
+
+    //         return response()->json(['success' => true]);
+    //     } catch (\Exception $e) {
+    //         return response()->json(['success' => false, 'error' => $e->getMessage()]);
+    //     }
+    // }
+
     public function approve(Request $request)
     {
         $paymentId = $request->input('payment_id');
         $amount = $request->input('amount');
-        $paymentMethodId = $request->input('payment_method_id'); // Get the payment method ID
+        $paymentMethodId = $request->input('payment_method_id'); // This will now be the token
 
         // Find the payment record in the database
         $payment = Payments::find($paymentId);
@@ -150,16 +217,13 @@ class PendingDetailsController extends Controller
             return response()->json(['success' => false, 'error' => 'Payment not found.']);
         }
 
-        // Here you should create the payment in Stripe
         try {
-            // Use Stripe's API to charge the card
-            $stripe = new \Stripe\StripeClient('sk_test_51Q4VHt02ST7uJQE3KMzT8pHzakpicDVqZOlA1icesHmZOfhBq92AVRtXMytYNsvJdrYuBfI7vuvc25l1o8xs6uei00VkrKmd5e');
+            $stripe = new \Stripe\StripeClient('sk_test_51Q4VHt02ST7uJQE3KMzT8pHzakpicDVqZOlA1icesHmZOfhBq92AVRtXMytYNsvJdrYuBfI7vuvc25l1o8xs6uei00VkrKmd5e'); // Your secret key
             $charge = $stripe->charges->create([
-                'amount' => $amount * 100, // Stripe expects amount in cents
-                'currency' => 'usd', // Change as per your requirements
-                'payment_method' => $paymentMethodId, // Use payment_method instead of source
-                'confirmation_method' => 'automatic',
-                'confirm' => true,
+                'amount' => $amount * 100, // Amount in cents
+                'currency' => 'usd', // Adjust currency as needed
+                'source' => $paymentMethodId, // Use the token here
+                'description' => 'Payment for order ' . $paymentId,
             ]);
 
             // Update payment status in your database

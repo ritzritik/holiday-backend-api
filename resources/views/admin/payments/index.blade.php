@@ -19,7 +19,13 @@
                         </div>
                     @endforeach
                 </div>
-                <span id="payment-mode-label">Not Accepting</span>
+                <span id="payment-mode-label">
+                    @if (request('payment_mode') == 4)
+                        We are currently <strong>Not Accepting Payments</strong>.
+                    @elseif(request('payment_mode'))
+                        We are accepting payments through <span style="color: #007bff; font-weight: bold;">{{ $paymentOptions[request('payment_mode')] }}</span>.
+                    @endif
+                </span>
             </div>
 
             <div id="payment-section">
@@ -45,12 +51,10 @@
                                             onclick="openApproveModal(
                                                 {{ $payment->id }},
                                                 '{{ $payment->amount }}',
-                                                '{{ $payment->cardDetails->card_number ?? 'N/A' }}',
-                                                '{{ $payment->cardDetails->card_holder_name ?? 'N/A' }}',
-                                                '{{ $payment->cardDetails->expiry_date ?? 'N/A' }}',
-                                                '{{ $payment->cardDetails->billing_address ?? 'N/A' }}',
-                                                '{{ $payment->cardDetails->cvv ?? 'N/A' }}',
-                                                // '{{ $payment->payment_method_id }}'
+                                                '{{ $payment->cardDetails->card_number ?? '' }}',
+                                                '{{ $payment->cardDetails->card_holder_name ?? '' }}',
+                                                '{{ $payment->cardDetails->expiry_date ?? '' }}',
+                                                '{{ $payment->cardDetails->cvv ?? '' }}'
                                             )">Approve</button>
                                         <button type="submit" class="btn btn-danger btn-sm" name="reject_payment_id"
                                             value="{{ $payment->id }}">Reject</button>
@@ -77,34 +81,20 @@
                         <button type="button" class="close" data-dismiss="modal" aria-label="Close"></button>
                     </div>
                     <div class="modal-body">
-                        <form id="approve-form" method="POST" action="{{ route('admin.payments.approve') }}">
+                        <form id="approve-form" method="POST">
                             @csrf
                             <input type="hidden" name="payment_id" id="modal-payment-id">
                             <input type="hidden" name="amount" id="modal-amount">
 
                             <div class="mb-3">
-                                <label for="card_number" class="form-label">Card Number</label>
-                                <input type="text" class="form-control" id="modal-card_number" name="card_number"
-                                    required readonly>
+                                <label>Existing Card Details</label>
+                                <p><strong>Card Number:</strong> <span id="existing-card-number"></span></p>
+                                <p><strong>Card Holder Name:</strong> <span id="existing-card-holder-name"></span></p>
+                                <p><strong>Expiry Date:</strong> <span id="existing-expiry-date"></span></p>
+                                <p><strong>CVV:</strong> <span id="existing-cvv"></span></p>
                             </div>
-                            <div class="mb-3">
-                                <label for="card_holder_name" class="form-label">Card Holder Name</label>
-                                <input type="text" class="form-control" id="modal-card_holder_name"
-                                    name="card_holder_name" required readonly>
-                            </div>
-                            <div class="mb-3">
-                                <label for="expiry_date" class="form-label">Expiry Date</label>
-                                <input type="text" class="form-control" id="modal-expiry_date" name="expiry_date"
-                                    required readonly>
-                            </div>
-                            <div class="mb-3">
-                                <label for="billing_address" class="form-label">Billing Address</label>
-                                <textarea class="form-control" id="modal-billing_address" name="billing_address" required readonly></textarea>
-                            </div>
-                            <div class="mb-3">
-                                <label for="cvv" class="form-label">CVV</label>
-                                <input type="text" class="form-control" id="modal-cvv" name="cvv" required readonly>
-                            </div>
+
+                            <div id="card-element"><!-- Stripe Element will be inserted here --></div>
                             <button type="submit" class="btn btn-primary">Confirm Approval</button>
                         </form>
                     </div>
@@ -112,50 +102,77 @@
             </div>
         </div>
 
+        <link href="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.css" rel="stylesheet">
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.js"></script>
+        <script src="https://js.stripe.com/v3/"></script>
+        <script src="https://cdn.jsdelivr.net/npm/axios@0.27.2/dist/axios.min.js"></script>
+        <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.9.2/dist/umd/popper.min.js"></script>
+        <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+
         <script>
-            function openApproveModal(paymentId, amount, cardNumber, cardHolderName, expiryDate, billingAddress, cvv) {
+            const stripe = Stripe(
+                'pk_test_51Q4VHt02ST7uJQE3YvQ59k8KcYnljkyzBq3dBY69Ot915PfAhzWywdRiYg8hYJzhjd3XzZtzVpmOMvhDkKAV1BJ600VYESqJJr'
+            ); // Use your actual public key
+            const elements = stripe.elements();
+            const cardElement = elements.create('card');
+            cardElement.mount('#card-element'); // Mount the card element
+
+            function openApproveModal(paymentId, amount, cardNumber, cardHolderName, expiryDate, cvv) {
                 document.getElementById('modal-payment-id').value = paymentId;
                 document.getElementById('modal-amount').value = amount;
-                document.getElementById('modal-card_number').value = cardNumber;
-                document.getElementById('modal-card_holder_name').value = cardHolderName;
-                document.getElementById('modal-expiry_date').value = expiryDate;
-                document.getElementById('modal-billing_address').value = billingAddress;
-                document.getElementById('modal-cvv').value = cvv;
+
+                // Set existing card details
+                document.getElementById('existing-card-number').textContent = cardNumber;
+                document.getElementById('existing-card-holder-name').textContent = cardHolderName;
+                document.getElementById('existing-expiry-date').textContent = expiryDate;
+                document.getElementById('existing-cvv').textContent = cvv;
 
                 var myModal = new bootstrap.Modal(document.getElementById('approveModal'));
                 myModal.show();
-
-                document.getElementById('approve-form').addEventListener('submit', function(event) {
-                    event.preventDefault(); // Prevent the default form submission
-
-                    const formData = new FormData(this); // Get form data
-                    formData.append('_token', '{{ csrf_token() }}'); // Ensure the CSRF token is included
-
-                    console.log('Submitting form with data:', Array.from(formData.entries())); // Log form data
-
-                    axios.post('{{ route('admin.payments.approve') }}', formData)
-                        .then(response => {
-                            console.log('Response from server:', response.data); // Log server response
-                            if (response.data.success) {
-                                alert('Payment approved successfully');
-                                location.reload(); // Refresh or update the UI
-                            } else {
-                                alert('Payment failed: ' + response.data.error);
-                            }
-                        })
-                        .catch(error => {
-                            console.error('Error during payment approval:', error); // Log any errors
-                            alert('Error: ' + (error.response ? error.response.data.error : error.message));
-                        });
-                });
             }
-        </script>
 
-        <!-- Include Bootstrap CSS and JS -->
-        <script src="https://cdn.jsdelivr.net/npm/axios@0.27.2/dist/axios.min.js"></script>
-        <link href="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
-        <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
-        <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.9.2/dist/umd/popper.min.js"></script>
-        <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+            function showToast(title, message, type) {
+                if (type === 'success') {
+                    toastr.success(message, title);
+                } else {
+                    toastr.error(message, title);
+                }
+            }
+
+            document.getElementById('approve-form').addEventListener('submit', function(event) {
+                event.preventDefault(); // Prevent the default form submission
+
+                stripe.createToken(cardElement).then(function(result) {
+                    if (result.error) {
+                        showToast('Error', result.error.message, 'error'); // Show error in case of failure
+                    } else {
+                        // Append the token to the form and submit it
+                        const formData = new FormData(event.target);
+                        formData.append('payment_method_id', result.token.id); // Include the token
+                        formData.append('_token', '{{ csrf_token() }}'); // Include CSRF token
+
+                        axios.post('{{ route('admin.payments.approve') }}', formData)
+                            .then(response => {
+                                if (response.data.success) {
+                                    setTimeout(() => {
+                                        showToast('Success', 'Payment approved successfully',
+                                            'success');
+                                    }, 1000);
+                                    setTimeout(() => {
+                                        location.reload();
+                                    }, 2000);
+                                } else {
+                                    showToast('Error', 'Payment failed: ' + response.data.error, 'error');
+                                }
+                            })
+                            .catch(error => {
+                                showToast('Error', 'Error: ' + (error.response ? error.response.data.error :
+                                    error.message), 'error');
+                            });
+                    }
+                });
+            });
+        </script>
     </div>
 @endsection
